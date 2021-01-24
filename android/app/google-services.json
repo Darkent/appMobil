@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "519890447913",
+    "firebase_url": "https://deliveryapp-dcfd9.firebaseio.com",
+    "project_id": "deliveryapp-dcfd9",
+    "storage_bucket": "deliveryapp-dcfd9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:519890447913:android:98d6a465a31a6537647638",
+        "android_client_info": {
+          "package_name": "com.guadas.grupopcsystems"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "519890447913-m6vrne63vfbidrfljl8fq0saggcm2vqf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANTWn98a_oq72wKBqk70BKejwqw-UZiP0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "519890447913-m6vrne63vfbidrfljl8fq0saggcm2vqf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
