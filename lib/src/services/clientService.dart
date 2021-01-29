@@ -19,8 +19,12 @@ class ClientService {
   };
   //tu server esta andando?
 
-  final urlSearchDNI = "https://apiperu.dev/api/dni/";
-  final urlSearchRUC = "https://apiperu.dev/api/ruc/";
+  // final urlSearchDNI = "https://apiperu.dev/api/dni/";
+  // final urlSearchRUC = "https://apiperu.dev/api/ruc/";
+  final urlSearchDNI =
+      "http://grupopcsystems.xyz/api/GHieD96xE0lrwjbRWDsvzIELebuWL3UiUONO1pfVjtPk2GqVmM/dni/";
+  final urlSearchRUC =
+      "http://grupopcsystems.xyz/api/GHieD96xE0lrwjbRWDsvzIELebuWL3UiUONO1pfVjtPk2GqVmM/ruc/";
   // final urlSearchDNI = "http://venta.grupopcsystems.online/api/services/dni/";
   // final urlSearchRUC = "http://venta.grupopcsystems.online/api/services/ruc/";
   final urlSearchByName =
@@ -65,18 +69,18 @@ class ClientService {
   Future<Client> getData(bool field, String document) async {
     http.Response response;
     var _responseData;
+    print(DateTime.now());
     if (field) {
-      response =
-          await http.get("$urlSearchDNI$document", headers: documentRequest);
+      response = await http.get("$urlSearchDNI$document");
       _responseData = json.decode(response.body);
       if (_responseData['success']) {
         return new Client.fromDNI(_responseData['data'], document);
       } else {
+        print("$urlSearchDNI$document");
         return new Client();
       }
     } else {
-      response =
-          await http.get("$urlSearchRUC$document", headers: documentRequest);
+      response = await http.get("$urlSearchRUC$document");
       _responseData = json.decode(response.body);
 
       if (_responseData['success']) {

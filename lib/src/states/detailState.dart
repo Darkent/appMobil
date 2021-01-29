@@ -1,7 +1,7 @@
 import 'package:rxdart/rxdart.dart';
 
 class DetailState {
-  BehaviorSubject<int> _quantityProduct = BehaviorSubject<int>.seeded(0);
+  BehaviorSubject<int> _quantityProduct = BehaviorSubject<int>.seeded(1);
 
   Stream<int> get quantityProduct => _quantityProduct.stream;
 

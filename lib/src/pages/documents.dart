@@ -1,16 +1,15 @@
-import 'dart:async';
-
-import 'package:delivery_app/src/models/client.dart';
+import 'package:delivery_app/src/models/documents.dart';
 import 'package:delivery_app/src/models/order.dart';
-import 'package:delivery_app/src/models/products.dart';
+
 import 'package:delivery_app/src/pages/viewPdf.dart';
 import 'package:delivery_app/src/providers/preferences.dart';
-import 'package:delivery_app/src/services/documentPdf.dart';
+
 import 'package:delivery_app/src/services/documentService.dart';
 import 'package:delivery_app/src/services/ordersService.dart';
 import 'package:delivery_app/src/states/ordersState.dart';
 import 'package:delivery_app/src/utils/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:share/share.dart';
 
 import '../../main.dart';
 
@@ -28,8 +27,10 @@ class _DocumentsPageState extends State<DocumentsPage> {
   double width;
   double height;
   DocumentService documentService;
-  StreamSubscription streamSubscription;
+
   List<Order> orders;
+  List<Document> documents;
+  TextEditingController queryController;
   OrdersService ordersService;
   PreferencesUser preferencesUser;
   OrdersState ordersState;
@@ -38,45 +39,73 @@ class _DocumentsPageState extends State<DocumentsPage> {
   void initState() {
     super.initState();
     ordersState = OrdersState();
+    queryController = TextEditingController();
     colorPrimary = adminColor;
     preferencesUser = PreferencesUser();
-    streamSubscription = preferencesUser.receive.stream.listen((event) {
-      requestOrders();
-    });
+
     width = widget.width;
     height = widget.height; // TODO: implement initState
     preferencesUser.newNotification = true;
     documentService = DocumentService();
     orders = [];
     ordersService = OrdersService();
-    requestOrders();
+
+    requestDocuments();
   }
 
   @override
   void dispose() {
     preferencesUser.newNotification = false;
-    streamSubscription.cancel();
-    // preferencesUser.receive.
+
     ordersState.dispose();
     super.dispose();
   }
 
-  void requestOrders() async {
-    orders = await ordersService.getAllOrders();
+  void requestDocuments() async {
+    documents = await documentService.getDocuments();
+    documents.sort(
+        (a, b) => DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
+    ordersState.inDocuments(documents);
+  }
 
-    List<Order> _pending = [];
-    List<Order> _delivered = [];
+  _search() {
+    print(documents.length);
+    List<Document> _document = List.from(documents);
+    if (queryController.text.isNotEmpty) {
+      String _query = queryController.text;
+      var _number = int.tryParse(_query) ?? null;
 
-    orders.forEach((Order order) {
-      if (order.documents.isEmpty) {
-        _pending.add(order);
+      if (_number != null) {
+        _document = _document.where((o) {
+          if (o.customerDocument.number.contains(_query)) {
+            return true;
+          } else {
+            return false;
+          }
+        }).toList();
       } else {
-        _delivered.add(order);
+        _document = _document.where((o) {
+          if (o.customerDocument.name
+              .toUpperCase()
+              .contains(_query.toUpperCase())) {
+            return true;
+          } else {
+            return false;
+          }
+        }).toList();
       }
-    });
-
-    ordersState.inDelivered(_delivered);
-    ordersState.inPending(_pending);
+    }
+    if (!ordersState.selectFValue) {
+      _document.removeWhere((o) => o.number[0] == "F");
+    }
+    if (!ordersState.selectBValue) {
+      _document.removeWhere((o) => o.number[0] == "B");
+    }
+    if (!ordersState.selectNValue) {
+      _document.removeWhere((o) => o.number[0] == "N");
+    }
+    print(_document.length);
+    ordersState.inDocuments(_document);
   }
 
   @override
@@ -98,194 +127,298 @@ class _DocumentsPageState extends State<DocumentsPage> {
         ),
       ),
       body: Center(
-        child: StreamBuilder(
-          stream: ordersState.delivered,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return orderShow(snapshot.data);
-            } else {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-          },
+        child: Column(
+          children: [
+            Column(
+              children: [
+                Container(
+                  color: colorPrimary,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: TextField(
+                            controller: queryController,
+                            decoration: InputDecoration(
+                              hintText: "Buscar..",
+                              isDense: true,
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: EdgeInsets.fromLTRB(width * .02,
+                                  width * .03, width * .02, width * .03),
+                              border: OutlineInputBorder(
+                                  borderSide: BorderSide(color: colorPrimary)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: colorPrimary)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        child: Container(
+                            child: Icon(
+                          Icons.search,
+                          size: width * .1,
+                        )),
+                        onTap: _search,
+                      )
+                    ],
+                  ),
+                ),
+                Container(
+                  color: colorPrimary,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Row(
+                        children: [
+                          Text("Factura"),
+                          StreamBuilder<bool>(
+                            initialData: true,
+                            stream: ordersState.selectF,
+                            builder: (context, AsyncSnapshot<bool> snapshot) {
+                              return Checkbox(
+                                activeColor: colorSecondary,
+                                onChanged: (b) {
+                                  ordersState.inSelectF(b);
+                                },
+                                value: snapshot.data,
+                              );
+                            },
+                          )
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Text("Boleta de V."),
+                          StreamBuilder<bool>(
+                            initialData: true,
+                            stream: ordersState.selectB,
+                            builder: (context, AsyncSnapshot<bool> snapshot) {
+                              return Checkbox(
+                                activeColor: colorSecondary,
+                                onChanged: (b) {
+                                  ordersState.inSelectB(b);
+                                },
+                                value: snapshot.data,
+                              );
+                            },
+                          )
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Text("Nota de V."),
+                          StreamBuilder<bool>(
+                            initialData: true,
+                            stream: ordersState.selectN,
+                            builder: (context, AsyncSnapshot<bool> snapshot) {
+                              return Checkbox(
+                                activeColor: colorSecondary,
+                                onChanged: (b) {
+                                  ordersState.inSelectN(b);
+                                },
+                                value: snapshot.data,
+                              );
+                            },
+                          )
+                        ],
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+            Expanded(
+              child: StreamBuilder(
+                stream: ordersState.documents,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.assignment_late_rounded,
+                              size: width * .08,
+                              color: colorSecondary,
+                            ),
+                            Text("No se encontraron documentos.")
+                          ],
+                        ),
+                      );
+                    } else {
+                      return orderShow(snapshot.data);
+                    }
+                  } else {
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Container orderShow(List<Order> list) {
+  Container orderShow(List<Document> list) {
     return Container(
       child: SingleChildScrollView(
         child: Column(
           children: List.generate(list.length, (int idx) {
-            Order e = list[idx];
-            return GestureDetector(
-              onTap: () async {
-                await show(e).then((value) {
-                  if (value != null) {
-                    if (value) {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => PdfViewer(
-                                    order: e,
-                                    externalId: e.externalId,
-                                  )));
-                    } else {
-                      message("Documento emitido");
-                      requestOrders();
-                    }
-                  }
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Container(
-                  width: width * .9,
-                  child: Card(
-                      margin: EdgeInsets.zero,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: width * .9,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: width,
-                                  decoration:
-                                      BoxDecoration(color: colorSecondary),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: Text(
-                                      e.customer.name,
-                                      maxLines: 1,
-                                      textAlign: TextAlign.left,
-                                      style: TextStyle(
-                                          fontSize: width * .045,
-                                          color: Colors.white),
-                                    ),
+            Document e = list[idx];
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Container(
+                width: width * .9,
+                child: Card(
+                    margin: EdgeInsets.zero,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: width * .9,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: width,
+                                decoration:
+                                    BoxDecoration(color: colorSecondary),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Text(
+                                    e.customerDocument.name.toUpperCase(),
+                                    maxLines: 1,
+                                    textAlign: TextAlign.left,
+                                    style: TextStyle(
+                                        fontSize: width * .045,
+                                        color: Colors.white),
                                   ),
                                 ),
-                                Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: Row(
-                                      children: [
-                                        Text(
-                                          e.number.length > 8
-                                              ? "RUC: "
-                                              : "DNI: ",
-                                          style: TextStyle(
-                                              fontSize: width * .04,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          e.number,
-                                          style:
-                                              TextStyle(fontSize: width * .04),
-                                        ),
-                                      ],
-                                    )),
-                                Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: Row(
-                                      children: [
-                                        Text(
-                                          "Fecha Pedido: ",
-                                          style: TextStyle(
-                                              fontSize: width * .035,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          formatDate(e.date),
-                                          style:
-                                              TextStyle(fontSize: width * .035),
-                                        ),
-                                      ],
-                                    )),
-                                e.documents.isNotEmpty
-                                    ? Padding(
-                                        padding: const EdgeInsets.all(4.0),
-                                        child: Row(
-                                          children: [
-                                            Text(
-                                              "Fecha Emisión: ",
-                                              style: TextStyle(
-                                                  fontSize: width * .035,
-                                                  fontWeight: FontWeight.bold),
+                              ),
+                              Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        e.customerDocument.number.length > 8
+                                            ? "RUC: "
+                                            : "DNI: ",
+                                        style: TextStyle(
+                                            fontSize: width * .04,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        e.customerDocument.number,
+                                        style: TextStyle(fontSize: width * .04),
+                                      ),
+                                    ],
+                                  )),
+                              Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        "Documento: ",
+                                        style: TextStyle(
+                                            fontSize: width * .035,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        e.number,
+                                        style:
+                                            TextStyle(fontSize: width * .035),
+                                      ),
+                                    ],
+                                  )),
+                              Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        "Fecha Emisión: ",
+                                        style: TextStyle(
+                                            fontSize: width * .035,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        formatDate(e.date),
+                                        style:
+                                            TextStyle(fontSize: width * .035),
+                                      ),
+                                    ],
+                                  )),
+                              Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            "Total: ",
+                                            style: TextStyle(
+                                                fontSize: width * .035,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          Text(
+                                            "S/. ${e.total}",
+                                            style: TextStyle(
+                                                color: colorSecondary,
+                                                fontSize: width * .035,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                              icon: Icon(
+                                                Icons.search,
+                                                color: colorSecondary,
+                                              ),
+                                              onPressed: () => Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        PdfViewer(
+                                                      documentD: e,
+                                                      url: e.pdfUrl,
+                                                    ),
+                                                  ))),
+                                          IconButton(
+                                            icon: Icon(
+                                              Icons.share,
+                                              color: colorSecondary,
                                             ),
-                                            Text(
-                                              formatDate(e.date),
-                                              style: TextStyle(
-                                                  fontSize: width * .035),
-                                            ),
-                                          ],
-                                        ))
-                                    : Padding(
-                                        padding: const EdgeInsets.all(4.0),
-                                        child: Row(
-                                          children: [
-                                            Text(
-                                              "Documento a emitir: ",
-                                              style: TextStyle(
-                                                  fontSize: width * .035,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            Text(
-                                              documentToEmit(e.documentNumber),
-                                              style: TextStyle(
-                                                  fontSize: width * .035),
-                                            ),
-                                          ],
-                                        )),
-                                Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              "Items: ",
-                                              style: TextStyle(
-                                                  fontSize: width * .035,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            Text(
-                                              e.items.length.toString(),
-                                              style: TextStyle(
-                                                  fontSize: width * .035),
-                                            ),
-                                          ],
-                                        ),
-                                        Row(
-                                          children: [
-                                            Text(
-                                              "Total: ",
-                                              style: TextStyle(
-                                                  fontSize: width * .035,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            Text(
-                                              "S/. ${e.total}",
-                                              style: TextStyle(
-                                                  color: colorSecondary,
-                                                  fontSize: width * .035,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
-                                        ),
-                                        SizedBox()
-                                      ],
-                                    )),
-                              ],
-                            ),
+                                            onPressed: () {
+                                              String typeName = e
+                                                          .customerDocument
+                                                          .number
+                                                          .length ==
+                                                      8
+                                                  ? "NOMBRE: "
+                                                  : "RAZON SOCIAL";
+
+                                              Share.share(
+                                                  "$typeName: ${e.customerDocument.name} \ FECHA: ${e.date} \ DOCUMENTO: ${e.number} \Abre el enlace: ${e.pdfUrl}");
+                                            },
+                                          ),
+                                        ],
+                                      )
+                                    ],
+                                  )),
+                            ],
                           ),
-                        ],
-                      )),
-                ),
+                        ),
+                      ],
+                    )),
               ),
             );
           }),
@@ -324,305 +457,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
       default:
         return "-";
         break;
-    }
-  }
-
-  Future show(Order order) async {
-    List<Products> tmp = [];
-    order.items.forEach((element) {
-      tmp.add(element);
-    });
-    print(order.id);
-
-    int originalSize = tmp.length;
-    ordersState.inCurrentList(tmp);
-    Client customer = order.customer;
-    return showGeneralDialog(
-        barrierColor: Colors.black.withOpacity(0.5),
-        transitionBuilder: (context, a1, a2, widget) {
-          final curvedValue = Curves.easeInOutBack.transform(a1.value) - 1.0;
-          return SafeArea(
-            child: Transform(
-              transform: Matrix4.translationValues(0.0, curvedValue * 200, 0.0),
-              child: Opacity(
-                opacity: a1.value,
-                child: Dialog(
-                  insetPadding: EdgeInsets.all(height * .01),
-                  elevation: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(6.0),
-                    child: Container(
-                      width: width * .97,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            SizedBox(
-                              height: height * .005,
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                customer.name,
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: width * .045),
-                              ),
-                            ),
-                            Container(
-                              width: width,
-                              child: Column(
-                                children: [
-                                  Table(
-                                    children: [
-                                      TableRow(children: [
-                                        Text(
-                                          customer.number.length > 8
-                                              ? "RUC: "
-                                              : "DNI: ",
-                                          style: TextStyle(
-                                              fontSize: width * .035,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          customer.number,
-                                          style:
-                                              TextStyle(fontSize: width * .035),
-                                        ),
-                                      ]),
-                                      TableRow(children: [
-                                        Text(
-                                          "Email",
-                                          style: TextStyle(
-                                              fontSize: width * .035,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          customer.email,
-                                          style:
-                                              TextStyle(fontSize: width * .035),
-                                        ),
-                                      ]),
-                                      TableRow(children: [
-                                        Text(
-                                          "Fecha Pedido: ",
-                                          style: TextStyle(
-                                              fontSize: width * .035,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          formatDate(order.date),
-                                          style:
-                                              TextStyle(fontSize: width * .035),
-                                        ),
-                                      ]),
-                                      TableRow(children: [
-                                        Text(
-                                          "Dirección: ",
-                                          style: TextStyle(
-                                              fontSize: width * .035,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          customer.address,
-                                          style:
-                                              TextStyle(fontSize: width * .035),
-                                        ),
-                                      ]),
-                                      order.documents.isEmpty
-                                          ? TableRow(children: [
-                                              Text(
-                                                "Documento de Pago: ",
-                                                style: TextStyle(
-                                                    fontSize: width * .035,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Text(
-                                                order.document.toUpperCase(),
-                                                style: TextStyle(
-                                                    fontSize: width * .035),
-                                              ),
-                                            ])
-                                          : TableRow(children: [
-                                              Text(
-                                                "N° de Documento: ",
-                                                style: TextStyle(
-                                                    fontSize: width * .035,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Text(
-                                                order.documents
-                                                    .first['number_full'],
-                                                style: TextStyle(
-                                                    fontSize: width * .035),
-                                              ),
-                                            ]),
-                                      TableRow(children: [
-                                        Text(
-                                          "Número de items: ",
-                                          style: TextStyle(
-                                              fontSize: width * .035,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          order.items.length.toString(),
-                                          style:
-                                              TextStyle(fontSize: width * .035),
-                                        ),
-                                      ]),
-                                      TableRow(children: [
-                                        Text(
-                                          "Precio total: ",
-                                          style: TextStyle(
-                                              fontSize: width * .035,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          order.total,
-                                          style:
-                                              TextStyle(fontSize: width * .035),
-                                        ),
-                                      ]),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                                height: height * .3,
-                                width: width * .9,
-                                child: StreamBuilder(
-                                  stream: ordersState.currentList,
-                                  builder: (context, snapshot) => ListView(
-                                    children: tmp
-                                        .map<Widget>((e) => Padding(
-                                              padding: const EdgeInsets.only(
-                                                  top: 8.0),
-                                              child: Card(
-                                                child: Row(
-                                                  children: [
-                                                    Container(
-                                                      width: width * .75,
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            e.description,
-                                                            maxLines: 2,
-                                                            textAlign:
-                                                                TextAlign.start,
-                                                            style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold),
-                                                          ),
-                                                          Text(
-                                                            "S/.${(double.parse(e.subtotal) * 1.18).toStringAsFixed(2)}",
-                                                            maxLines: 1,
-                                                          ),
-                                                          Row(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                              Text(
-                                                                "Cant.: ",
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              ),
-                                                              Text(
-                                                                e.quantity
-                                                                    .toString(),
-                                                                maxLines: 1,
-                                                              )
-                                                            ],
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ))
-                                        .toList(),
-                                    scrollDirection: Axis.vertical,
-                                  ),
-                                )),
-                            Row(
-                              mainAxisAlignment: order.documents.isEmpty
-                                  ? MainAxisAlignment.spaceAround
-                                  : MainAxisAlignment.end,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: RaisedButton(
-                                    onPressed: () async {
-                                      Navigator.pop(context, true);
-                                    },
-                                    child: Text("Ver Documento",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                    textColor: Colors.white,
-                                    color: adminColor,
-                                  ),
-                                ),
-                                RaisedButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text("Cerrar",
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  color: colorSecondary,
-                                  textColor: Colors.white,
-                                )
-                              ],
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-        transitionDuration: Duration(milliseconds: 200),
-        barrierDismissible: true,
-        barrierLabel: '',
-        context: context,
-        pageBuilder: (context, animation1, animation2) => null);
-  }
-
-  Future<void> selectDate(Function(DateTime) sink) async {
-    final DateTime picked = await showDatePicker(
-      helpText: "Elija la fecha",
-      context: context,
-      locale: Locale('es'),
-      initialDate: DateTime.now(),
-      firstDate: DateTime(DateTime.now().year - 1),
-      lastDate: DateTime(DateTime.now().year + 1),
-      builder: (BuildContext context, Widget child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            primaryColor: colorPrimary,
-            accentColor: colorPrimary,
-            colorScheme: ColorScheme.light(primary: colorPrimary),
-            buttonTheme: ButtonThemeData(textTheme: ButtonTextTheme.primary),
-          ),
-          child: child,
-        );
-      },
-    );
-    if (picked != null) {
-      sink(picked);
     }
   }
 

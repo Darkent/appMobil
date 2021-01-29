@@ -6,6 +6,7 @@ import 'package:delivery_app/src/models/user.dart';
 import 'package:delivery_app/src/pages/viewPdf.dart';
 import 'package:delivery_app/src/providers/preferences.dart';
 import 'package:delivery_app/src/services/shopCarService.dart';
+import 'package:delivery_app/src/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -36,9 +37,10 @@ class _PurchasesPageState extends State<PurchasesPage> {
     shopCarService = ShopCarService();
     preferencesUser = PreferencesUser();
     user = User.fromjson(json.decode(preferencesUser.userData));
-
+    colorPrimary = visitColor;
     width = widget.width;
     height = widget.height;
+    print(user.id);
   }
 
   void message(String _message) {
@@ -106,6 +108,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                   builder: (context) => PdfViewer(
                                         user: user,
                                         purchase: e,
+                                        document: e.document,
                                         externalId: e.documentExternalId,
                                       )));
                         }
@@ -116,7 +119,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                       child: Center(
                         child: Container(
                           width: width * .9,
-                          height: height * .20,
+                          height: height * .23,
                           child: Card(
                               child: Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -362,7 +365,10 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                                   fontWeight: FontWeight.bold),
                                             ),
                                             Text(
-                                              order.numberDocument ?? "-",
+                                              order.documents
+                                                      .first["number_full"] ??
+                                                  order.documents
+                                                      .first["identifier"],
                                               style: TextStyle(
                                                   fontSize: width * .035),
                                             ),
@@ -411,7 +417,7 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                             padding: const EdgeInsets.all(8.0),
                                             child: Container(
                                               width: width * .75,
-                                              height: height * .1,
+                                              height: height * .13,
                                               child: Column(
                                                 crossAxisAlignment:
                                                     CrossAxisAlignment.start,

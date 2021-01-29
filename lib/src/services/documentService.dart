@@ -1,11 +1,12 @@
 import 'dart:convert';
 
 import 'package:delivery_app/src/models/client.dart';
+import 'package:delivery_app/src/models/documents.dart';
 import 'package:delivery_app/src/models/order.dart';
 import 'package:delivery_app/src/models/products.dart';
 import 'package:delivery_app/src/models/series.dart';
 import 'package:delivery_app/src/models/user.dart';
-import 'package:delivery_app/src/utils/numerosLetras.dart';
+import 'package:delivery_app/src/utils/const.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:delivery_app/src/providers/preferences.dart';
@@ -17,21 +18,45 @@ class DocumentService {
     'Accept': 'application/json',
     'Authorization': "Bearer zXxR5P5vJB25p9IulQOoh1zoN4RWDK3rXwAbUSooV28qMBXkqi"
   };
-  final keyFCM = "http://venta.grupopcsystems.online/api/companies/record";
+  final keyFCM = "$globalUrl/api/companies/record";
   final urlFirebase = "https://fcm.googleapis.com/fcm/send";
   final urlTokenUser =
-      "http://venta.grupopcsystems.online/api/users/filter?column=number&page=1&value=";
-  final url = "http://venta.grupopcsystems.online/api/documents";
-  final urlClients = "http://venta.grupopcsystems.online/api/generar_documents";
-  final urlSaleNotePdf =
-      "http://venta.grupopcsystems.online/api/sale-note/record/";
-  final urlSaleNote = "http://venta.grupopcsystems.online/api/sale-note";
-  final urlUpdate =
-      "http://venta.grupopcsystems.online/api/orders/status/update";
-  final urlUpdateItems =
-      "http://venta.grupopcsystems.online/api/order-notes/update";
+      "$globalUrl/api/users/filter?column=number&page=1&value=";
+  final url = "$globalUrl/api/documents";
+  final urlClients = "$globalUrl/api/documents/generar_documents";
+  final urlSaleNotePdf = "$globalUrl/api/sale-note/record/";
+  final urlSaleNote = "$globalUrl/api/sale-note";
+  final urlUpdate = "$globalUrl/api/orders/status/update";
+  final urlUpdateItems = "$globalUrl/api/order-notes/update";
 
-  final urlSeries = "http://venta.grupopcsystems.online/api/documents/tables";
+  final urlSeries = "$globalUrl/api/documents/tables";
+
+  final urlNotes =
+      "$globalUrl/api/sale-notes/records?column=customer_id&page=1&series&value";
+
+  final urlDocuments =
+      "$globalUrl/api/documents/records?category_id&customer_id&d_end&d_start&date_of_issue&document_type_id&item_id&number&page=1&pending_payment=false&series&state_type_id";
+
+  Future<List<Document>> getDocuments() async {
+    List<Document> documents = [];
+    http.Response response;
+    Map parsed;
+    response = await http.get(urlDocuments, headers: requestHeaders);
+    if (response.statusCode == 200) {
+      parsed = json.decode(response.body);
+      documents.addAll(
+          parsed['data'].map<Document>((d) => Document.documents(d)).toList());
+    }
+
+    response = await http.get(urlNotes, headers: requestHeaders);
+    if (response.statusCode == 200) {
+      parsed = json.decode(response.body);
+      documents.addAll(
+          parsed['data'].map<Document>((d) => Document.noteSales(d)).toList());
+    }
+
+    return documents;
+  }
 
   Future<List<Series>> getSeries() async {
     http.Response response = await http.get(urlSeries, headers: requestHeaders);
@@ -56,11 +81,6 @@ class DocumentService {
   }
 
   Future<bool> deletedItems(Map order) async {
-    // List<Map> _items = [];
-    // items.forEach((element) {
-    //   _items.add(productToMap(element));
-    // });
-    // Map body = {"id": id, "items": _items};
     http.Response response = await http.post(urlUpdateItems,
         body: json.encode(order), headers: requestHeaders);
     if (response.statusCode == 200) {
@@ -135,14 +155,15 @@ class DocumentService {
 
   Future<bool> emitir(Map body,
       {List<Products> items, int id, bool deletedI, Order order}) async {
+    // debugPrint(body.toString(), wrapWidth: 1024);
     http.Response response;
     if (!deletedI) {
       response = await http.post(urlClients,
           body: json.encode(body), headers: requestHeaders);
-      debugPrint(response.body, wrapWidth: 1024);
+
       if (response.statusCode == 200) {
         sendNotification(order.number);
-
+        print(response.statusCode);
         return true;
       }
     } else {
@@ -153,11 +174,13 @@ class DocumentService {
 
         if (response.statusCode == 200) {
           sendNotification(order.number);
-
+          print(response.statusCode);
           return true;
         }
       }
     }
+    print(response.body);
+    print(urlClients);
 
     return false;
   }
@@ -182,7 +205,7 @@ class DocumentService {
   }
 
   Map documentE(
-      {String serie,
+      {Series serie,
       String type,
       DateTime date,
       Order order,
@@ -194,83 +217,22 @@ class DocumentService {
     String base = order.subtotal.split(",").join();
     String total = (double.parse(order.subtotal.split(",").join()) * 1.18)
         .toStringAsFixed(2);
-
+    print(serie.id);
+    print(serie.documentTypeId);
     return {
-      "type": "invoice",
-      "group_id": "01",
-      "user_id": 1,
+      "document_type_id": serie.documentTypeId,
+      "series_id": serie.id,
       "establishment_id": 1,
-      "establishment": {
-        "country_id": "PE",
-        "country": {"id": "PE", "description": "PERU"},
-        "department_id": "05",
-        "department": {"id": "-", "description": "-"},
-        "province_id": "-",
-        "province": {"id": "-", "description": "-"},
-        "district_id": "-",
-        "district": {"id": "-", "description": "-"},
-        "urbanization": null,
-        "address": "-",
-        "email": "-",
-        "telephone": "-",
-        "code": "0000",
-        "trade_address": null,
-        "web_address": null,
-        "aditional_information": null
-      },
-      "soap_type_id": "01",
-      "state_type_id": "01",
-      "ubl_version": "2.1",
-      "filename": "",
-      "document_type_id": type,
-      "series": serie,
       "number": "#",
       "date_of_issue": _date,
-      "time_of_issue": "18:40:53",
-      "customer_id": order.customer.id,
-      "customer": {
-        "identity_document_type_id": _customers.number.length == 8 ? "1" : "6",
-        "identity_document_type": {
-          "id": _customers.number.length == 8 ? "1" : "6",
-          "description": _customers.number.length == 8 ? "DNI" : "RUC"
-        },
-        "number": _customers.number ?? "-",
-        "name": _customers.name ?? "-",
-        "trade_name": _customers.name ?? "-",
-        "country_id": _customers.countryId ?? "-",
-        "country": {
-          "id": _customers.country.id ?? "-",
-          "description": _customers.country.description ?? "-"
-        },
-        "department_id": _customers.department.id ?? "-",
-        "department": {
-          "id": _customers.department.id ?? "-",
-          "description": _customers.department.description ?? "-"
-        },
-        "province_id": _customers.province.id,
-        "province": {
-          "id": _customers.province.id ?? "-",
-          "description": _customers.province.description ?? "-"
-        },
-        "district_id": _customers.district.id ?? "-",
-        "district": {
-          "id": _customers.district.id ?? "-",
-          "description": _customers.district.description ?? "-"
-        },
-        "address": _customers.address ?? "-",
-        "email": _customers.email ?? "-",
-        "telephone": _customers.telephone ?? "-",
-        "perception_agent": 0
-      },
+      "time_of_issue": "17:34:01",
+      "customer_id": order.customerId,
       "currency_type_id": "PEN",
       "purchase_order": null,
-      "quotation_id": null,
-      "sale_note_id": null,
-      "order_note_id": order.id,
       "exchange_rate_sale": "1.000",
       "total_prepayment": "0.00",
-      "total_discount": "0.00",
       "total_charge": "0.00",
+      "total_discount": "0.00",
       "total_exportation": "0.00",
       "total_free": "0.00",
       "total_taxed": base,
@@ -281,49 +243,161 @@ class DocumentService {
       "total_isc": "0.00",
       "total_base_other_taxes": "0.00",
       "total_other_taxes": "0.00",
-      "total_plastic_bag_taxes": 0,
       "total_taxes": igv,
       "total_value": base,
       "total": total,
-      "has_prepayment": 0,
-      "affectation_type_prepayment": null,
-      "was_deducted_prepayment": 0,
+      "operation_type_id": "0101",
+      "date_of_due": _date,
       "items": items.map<Map>((product) => newItems(product)).toList(),
-      "charges": null,
-      "discounts": null,
-      "prepayments": null,
-      "guides": null,
-      "related": null,
-      "perception": null,
-      "detraction": null,
-      "invoice": {"operation_type_id": "0101", "date_of_due": "2021-01-17"},
-      "note": null,
-      "hotel": [],
-      "transport": [],
+      "charges": {},
+      "discounts": {},
+      "attributes": [],
+      "guides": {},
       "additional_information": null,
-      "plate_number": null,
-      "legends": [
-        {"code": 1000, "value": NumeroLetras().convertir(total)}
-      ],
-      "actions": {
-        "send_email": false,
-        "send_xml_signed": true,
-        "format_pdf": "a4"
-      },
-      "data_json": null,
+      "actions": {"format_pdf": "a4"},
+      "user_id": 1,
+      "order_note_id": order.id,
+      "is_receivable": false,
       "payments": [
         {
           "id": null,
           "document_id": null,
-          "date_of_payment": "2021-01-17",
+          "date_of_payment": _date,
           "payment_method_type_id": "01",
           "payment_destination_id": "cash",
           "reference": null,
-          "payment": 0
+          "payment": double.parse(total)
         }
       ],
-      "send_server": false
+      "hotel": {},
+      "prefix": null
     };
+    // return {
+    //   "type": "invoice",
+    //   "group_id": "01",
+    //   "user_id": 1,
+    //   "establishment_id": 1,
+    //   "establishment": {
+    //     "country_id": "PE",
+    //     "country": {"id": "PE", "description": "PERU"},
+    //     "department_id": "05",
+    //     "department": {"id": "-", "description": "-"},
+    //     "province_id": "-",
+    //     "province": {"id": "-", "description": "-"},
+    //     "district_id": "-",
+    //     "district": {"id": "-", "description": "-"},
+    //     "urbanization": null,
+    //     "address": "-",
+    //     "email": "-",
+    //     "telephone": "-",
+    //     "code": "0000",
+    //     "trade_address": null,
+    //     "web_address": null,
+    //     "aditional_information": null
+    //   },
+    //   "soap_type_id": "01",
+    //   "state_type_id": "01",
+    //   "ubl_version": "2.1",
+    //   "filename": "",
+    //   "document_type_id": type,
+    //   "series": serie,
+    //   "number": "#",
+    //   "date_of_issue": _date,
+    //   "time_of_issue": "18:40:53",
+    //   "customer_id": order.customer.id,
+    //   "customer": {
+    //     "identity_document_type_id": _customers.number.length == 8 ? "1" : "6",
+    //     "identity_document_type": {
+    //       "id": _customers.number.length == 8 ? "1" : "6",
+    //       "description": _customers.number.length == 8 ? "DNI" : "RUC"
+    //     },
+    //     "number": _customers.number ?? "-",
+    //     "name": _customers.name ?? "-",
+    //     "trade_name": _customers.name ?? "-",
+    //     "country_id": "PE",
+    //     "country": {"id": "PE", "description": "PERU"},
+    //     "department_id": _customers.department.id ?? "15",
+    //     "department": {
+    //       "id": _customers.department.id ?? "15",
+    //       "description": _customers.department.description ?? "LIMA"
+    //     },
+    //     "province_id": _customers.province.id ?? "1501",
+    //     "province": {
+    //       "id": _customers.province.id ?? "1501",
+    //       "description": _customers.province.description ?? "LIMA"
+    //     },
+    //     "district_id": _customers.district.id ?? "150110",
+    //     "district": {
+    //       "id": _customers.district.id ?? "150110",
+    //       "description": _customers.district.description ?? "COMAS"
+    //     },
+    //     "address": _customers.address ?? "-",
+    //     "email": _customers.email ?? "-",
+    //     "telephone": _customers.telephone ?? "-",
+    //     "perception_agent": 0
+    //   },
+    //   "currency_type_id": "PEN",
+    //   "purchase_order": null,
+    //   "quotation_id": null,
+    //   "sale_note_id": null,
+    //   "order_note_id": order.id,
+    //   "exchange_rate_sale": "1.000",
+    //   "total_prepayment": "0.00",
+    //   "total_discount": "0.00",
+    //   "total_charge": "0.00",
+    //   "total_exportation": "0.00",
+    //   "total_free": "0.00",
+    //   "total_taxed": base,
+    //   "total_unaffected": "0.00",
+    //   "total_exonerated": "0.00",
+    //   "total_igv": igv,
+    //   "total_base_isc": "0.00",
+    //   "total_isc": "0.00",
+    //   "total_base_other_taxes": "0.00",
+    //   "total_other_taxes": "0.00",
+    //   "total_plastic_bag_taxes": 0,
+    //   "total_taxes": igv,
+    //   "total_value": base,
+    //   "total": total,
+    //   "has_prepayment": 0,
+    //   "affectation_type_prepayment": null,
+    //   "was_deducted_prepayment": 0,
+    //   "items": items.map<Map>((product) => newItems(product)).toList(),
+    //   "charges": null,
+    //   "discounts": null,
+    //   "prepayments": null,
+    //   "guides": null,
+    //   "related": null,
+    //   "perception": null,
+    //   "detraction": null,
+    //   "invoice": {"operation_type_id": "0101", "date_of_due": "2021-01-17"},
+    //   "note": null,
+    //   "hotel": [],
+    //   "transport": [],
+    //   "additional_information": null,
+    //   "plate_number": null,
+    //   "legends": [
+    //     {"code": 1000, "value": NumeroLetras().convertir(total)}
+    //   ],
+    //   "actions": {
+    //     "send_email": false,
+    //     "send_xml_signed": true,
+    //     "format_pdf": "a4"
+    //   },
+    //   "data_json": null,
+    //   "payments": [
+    //     {
+    //       "id": null,
+    //       "document_id": null,
+    //       "date_of_payment": "2021-01-17",
+    //       "payment_method_type_id": "01",
+    //       "payment_destination_id": "cash",
+    //       "reference": null,
+    //       "payment": 0
+    //     }
+    //   ],
+    //   "send_server": false
+    // };
   }
 
   Future<bool> emitirDocumentoDirectamente(Map body) async {
@@ -453,32 +527,40 @@ class DocumentService {
 
   Map newItems(Products product) {
     return {
+      "id": product.id,
+      "order_note_id": product.orderId,
       "item_id": product.itemId,
       "item": {
+        "id": product.itemId,
+        "is_set": false,
+        "has_igv": true,
+        "unit_price": product.price,
+        "warehouses": [
+          {
+            "stock": product.stock,
+            "warehouse_id": 1,
+            "warehouse_description": "Almacén Oficina Principal"
+          }
+        ],
         "description": product.description,
-        "item_type_id": "-",
-        "internal_id": "-",
-        "item_code": "-",
-        "item_code_gs1": null,
-        "unit_type_id": "NIU",
         "presentation": [],
-        "amount_plastic_bag_taxes": "-",
-        "is_set": 0,
-        "lots": [],
-        "IdLoteSelected": null
+        "unit_type_id": "NIU",
+        "item_unit_types": [],
+        "sale_unit_price": product.unitPrice,
+        "currency_type_id": "PEN",
+        "full_description": product.description,
+        "calculate_quantity": false,
+        "purchase_unit_price": "110.000000",
+        "currency_type_symbol": "S/",
+        "sale_affectation_igv_type_id": "10",
+        "purchase_affectation_igv_type_id": "10"
       },
-      "quantity": product.quantity,
-      "unit_value": (double.parse(product.price) / 1.18).toStringAsFixed(2),
-      "price_type_id": "01",
-      "unit_price": product.price,
+      "quantity": "1.0000",
+      "unit_value": product.unitValue,
       "affectation_igv_type_id": "10",
-      "total_base_igv":
-          ((double.parse(product.price) / 1.18) * product.quantity)
-              .toStringAsFixed(2),
+      "total_base_igv": product.totalBaseIgv,
       "percentage_igv": "18.00",
-      "total_igv":
-          (((double.parse(product.price) / 1.18) * .18) * product.quantity)
-              .toStringAsFixed(2),
+      "total_igv": product.totalIgv,
       "system_isc_type_id": null,
       "total_base_isc": "0.00",
       "percentage_isc": "0.00",
@@ -486,23 +568,82 @@ class DocumentService {
       "total_base_other_taxes": "0.00",
       "percentage_other_taxes": "0.00",
       "total_other_taxes": "0.00",
-      "total_plastic_bag_taxes": 0,
-      "total_taxes":
-          (((double.parse(product.price) / 1.18) * .18) * product.quantity)
-              .toStringAsFixed(2),
-      "total_value": ((double.parse(product.price) / 1.18) * product.quantity)
-          .toStringAsFixed(2),
+      "total_taxes": product.totalIgv,
+      "price_type_id": "01",
+      "unit_price": product.unitPrice,
+      "total_value": product.unitValue,
       "total_charge": "0.00",
       "total_discount": "0.00",
-      "total":
-          (double.parse(product.price) * product.quantity).toStringAsFixed(2),
-      "attributes": null,
-      "discounts": null,
-      "charges": null,
-      "warehouse_id": null,
-      "additional_information": null,
-      "name_product_pdf": null
+      "total": product.total,
+      "attributes": {},
+      "discounts": {},
+      "charges": {},
+      "affectation_igv_type": {
+        "id": "10",
+        "active": 1,
+        "exportation": 0,
+        "free": 0,
+        "description": "Gravado - Operación Onerosa"
+      },
+      "system_isc_type": null,
+      "price_type": {
+        "id": "01",
+        "active": 1,
+        "description": "Precio unitario (incluye el IGV)"
+      }
     };
+
+    // return {
+    //   "item_id": product.itemId,
+    //   "item": {
+    //     "description": product.description,
+    //     "item_type_id": "-",
+    //     "internal_id": "-",
+    //     "item_code": "-",
+    //     "item_code_gs1": null,
+    //     "unit_type_id": "NIU",
+    //     "presentation": [],
+    //     "amount_plastic_bag_taxes": "-",
+    //     "is_set": 0,
+    //     "lots": [],
+    //     "IdLoteSelected": null
+    //   },
+    //   "quantity": product.quantity,
+    //   "unit_value": (double.parse(product.price) / 1.18).toStringAsFixed(2),
+    //   "price_type_id": "01",
+    //   "unit_price": product.price,
+    //   "affectation_igv_type_id": "10",
+    //   "total_base_igv":
+    //       ((double.parse(product.price) / 1.18) * product.quantity)
+    //           .toStringAsFixed(2),
+    //   "percentage_igv": "18.00",
+    //   "total_igv":
+    //       (((double.parse(product.price) / 1.18) * .18) * product.quantity)
+    //           .toStringAsFixed(2),
+    //   "system_isc_type_id": null,
+    //   "total_base_isc": "0.00",
+    //   "percentage_isc": "0.00",
+    //   "total_isc": "0.00",
+    //   "total_base_other_taxes": "0.00",
+    //   "percentage_other_taxes": "0.00",
+    //   "total_other_taxes": "0.00",
+    //   "total_plastic_bag_taxes": 0,
+    //   "total_taxes":
+    //       (((double.parse(product.price) / 1.18) * .18) * product.quantity)
+    //           .toStringAsFixed(2),
+    //   "total_value": ((double.parse(product.price) / 1.18) * product.quantity)
+    //       .toStringAsFixed(2),
+    //   "total_charge": "0.00",
+    //   "total_discount": "0.00",
+    //   "total":
+    //       (double.parse(product.price) * product.quantity).toStringAsFixed(2),
+    //   "attributes": null,
+    //   "discounts": null,
+    //   "charges": null,
+    //   "warehouse_id": null,
+    //   "additional_information": null,
+    //   "name_product_pdf": null
+    // };
   }
 
   String formatDate(DateTime _date) {
@@ -514,94 +655,6 @@ class DocumentService {
 
     return z.length == 1 ? "0" + z : z;
   }
-
-  // Map bill(Order order, DateTime date) {
-  //   Client client = order.customer;
-  //   User user;
-  //   user = User.fromjson(json.decode(preferencesUser.userData));
-
-  //   double _total = double.parse(order.total);
-  //   return {
-  //     "serie_documento": "F001",
-  //     "numero_documento": "#",
-  //     "user_id": user.id,
-  //     "fecha_de_emision": formatDate(date),
-  //     "hora_de_emision": "10:11:11",
-  //     "codigo_tipo_operacion": "0101",
-  //     "codigo_tipo_documento": "01",
-  //     "codigo_tipo_moneda": "PEN",
-  //     "fecha_de_vencimiento": formatDate(date),
-  //     "numero_orden_de_compra": "-",
-  //     "datos_del_cliente_o_receptor": {
-  //       "codigo_tipo_documento_identidad":
-  //           client.number.length == 8 ? "1" : "6",
-  //       "numero_documento": client.number,
-  //       "apellidos_y_nombres_o_razon_social": client.name,
-  //       "codigo_pais": "PE",
-  //       "ubigeo": "150101",
-  //       "direccion": client.address,
-  //       "correo_electronico": client.email,
-  //       "telefono": client.telephone
-  //     },
-  //     "totales": {
-  //       "total_exportacion": 0.00,
-  //       "total_operaciones_gravadas": (_total / 1.18),
-  //       "total_operaciones_inafectas": 0.00,
-  //       "total_operaciones_exoneradas": 0.00,
-  //       "total_operaciones_gratuitas": 0.00,
-  //       "total_igv": (_total / 1.18) * .18,
-  //       "total_impuestos": (_total / 1.18) * .18,
-  //       "total_valor": (_total / 1.18),
-  //       "total_venta": _total,
-  //     },
-  //     "items": order.items.map<Map>((e) => itemsF(e)).toList(),
-  //     // "acciones": {"enviar_email": true},
-  //     "informacion_adicional": "Forma de pago:Efectivo|Caja: 1"
-  //   };
-  // }
-
-  // Map voucher(Order order, DateTime date) {
-  //   double _total = double.parse(order.total);
-  //   Client client = order.customer;
-  //   User user;
-  //   user = User.fromjson(json.decode(preferencesUser.userData));
-  //   return {
-  //     "serie_documento": "B001",
-  //     "numero_documento": "#",
-  //     "user_id": user.id,
-  //     "fecha_de_emision": formatDate(date),
-  //     "hora_de_emision": "10:11:11",
-  //     "codigo_tipo_operacion": "0101",
-  //     "codigo_tipo_documento": "03",
-  //     "codigo_tipo_moneda": "PEN",
-  //     "fecha_de_vencimiento": formatDate(date),
-  //     "numero_orden_de_compra": "",
-  //     "datos_del_cliente_o_receptor": {
-  //       "codigo_tipo_documento_identidad":
-  //           client.number.length == 8 ? "1" : "6",
-  //       "numero_documento": client.number,
-  //       "apellidos_y_nombres_o_razon_social": client.name,
-  //       "codigo_pais": "PE",
-  //       "ubigeo": "150101",
-  //       "direccion": client.address,
-  //       "correo_electronico": client.email,
-  //       "telefono": client.telephone
-  //     },
-  //     "totales": {
-  //       "total_exportacion": 0.00,
-  //       "total_operaciones_gravadas": (_total / 1.18),
-  //       "total_operaciones_inafectas": 0.00,
-  //       "total_operaciones_exoneradas": 0.00,
-  //       "total_operaciones_gratuitas": 0.00,
-  //       "total_igv": (_total / 1.18) * .18,
-  //       "total_impuestos": (_total / 1.18) * .18,
-  //       "total_valor": (_total / 1.18),
-  //       "total_venta": _total,
-  //     },
-  //     "items": order.items.map<Map>((e) => itemsF(e)).toList(),
-  //     // "acciones": {"enviar_email": true}
-  //   };
-  // }
 
   Map saleNote(Order order, DateTime date) {
     if (order.total == null) {
@@ -615,7 +668,9 @@ class DocumentService {
     return {
       "establishment_id": 1,
       "document_type_id": "80",
+      "order_note_id": order.id,
       "paid": 1,
+      "series": "N001",
       "series_id": 10,
       "prefix": "NV",
       "number": "#",
@@ -646,7 +701,19 @@ class DocumentService {
       "date_of_due": formatDate(date),
       "items": order.items.map<Map>((e) => itemsSaleNote(e)).toList(),
       "additional_information": null,
-      "actions": {"format_pdf": "a4"}
+      "actions": {"format_pdf": "a4"},
+      "payments": [
+        {
+          "id": null,
+          "document_id": null,
+          "sale_note_id": null,
+          "date_of_payment": formatDate(date),
+          "payment_method_type_id": "01",
+          "payment_destination_id": "cash",
+          "reference": null,
+          "payment": double.parse(order.total)
+        }
+      ],
     };
   }
 

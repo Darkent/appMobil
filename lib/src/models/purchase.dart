@@ -12,9 +12,13 @@ class Purchase {
   final String documentExternalId;
   final String numberDocument;
   final List documents;
+  final String name;
+  final String number;
 
   Purchase(
-      {this.documents,
+      {this.name,
+      this.number,
+      this.documents,
       this.id,
       this.numberDocument,
       this.address,
@@ -27,17 +31,21 @@ class Purchase {
       this.documentExternalId});
 
   factory Purchase.fromJson(Map json) => Purchase(
-      id: json['id'],
-      address: json['shipping_address'],
-      numberDocument: json['number_document'],
-      amount: double.tryParse(json['total'].split(",").join("")) ?? 0.0,
-      paymentType: json['reference_payment'],
-      date: json['created_at'],
-      items: json['items']
-          .map<Products>((e) => Products.fromJsonPurchase(e))
-          .toList(),
-      statusOrderId: json['status_order_id'],
-      document: json['document'],
-      documentExternalId: json['document_external_id'],
-      documents: json['documents']);
+        name: json['customer_name'],
+        number: json['customer_number'],
+        id: json['id'],
+        address: json['shipping_address'],
+        numberDocument: json['number_document'],
+        amount: double.tryParse(json['total'].split(",").join("")) ?? 0.0,
+        paymentType: json['reference_payment'],
+        date: json['created_at'],
+        items: json['items']
+            .map<Products>((e) => Products.fromJsonPurchase(e))
+            .toList(),
+        statusOrderId: json['status_order_id'],
+        document: json['document'],
+        documentExternalId: json['document_external_id'],
+        documents:
+            json['documents'].isEmpty ? json['sale_notes'] : json['documents'],
+      );
 }

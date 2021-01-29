@@ -14,6 +14,7 @@ class RegisterService {
   final urlRegisterClient =
       "http://venta.grupopcsystems.online/api/ecommerce/storeUser";
   Future<Map<String, dynamic>> register(Map body) async {
+    print(body);
     Response response = await post(urlRegisterCustomers,
         body: json.encode(body), headers: requestHeaders);
 

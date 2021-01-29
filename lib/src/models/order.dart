@@ -87,7 +87,8 @@ class Order {
       document:
           json['document'] ?? "-", //json['document_type_id']['sale_notes']);
       documentNumber: json['document_number'],
-      documents: json['documents'],
+      documents:
+          json['documents'].isEmpty ? json['sale_notes'] : json['documents'],
       customers: Customers.fromJson(json['customers']));
 }
 

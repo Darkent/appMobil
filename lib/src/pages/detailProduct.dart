@@ -176,7 +176,7 @@ class _DetailProductState extends State<DetailProduct> {
                                     onTap: () => detailState.decrement),
                               ),
                               StreamBuilder(
-                                  initialData: 0,
+                                  initialData: 1,
                                   stream: detailState.quantityProduct,
                                   builder: (context, snapshot) {
                                     int qty = snapshot.data;

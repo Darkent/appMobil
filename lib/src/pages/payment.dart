@@ -39,7 +39,7 @@ class PaymentPage extends StatefulWidget {
 
 class _PaymentPageState extends State<PaymentPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  List<String> _documents;
+  // List<String> _documents;
   int idCustomer;
   double width;
   double height;
@@ -63,7 +63,7 @@ class _PaymentPageState extends State<PaymentPage> {
     idCustomer = 0;
     documentService = DocumentService();
     paymentState = PaymentState();
-    _documents = ["FACTURA", "BOLETA DE VENTA", "NOTA DE VENTA"];
+    // _documents = ["FACTURA", "BOLETA DE VENTA", "NOTA DE VENTA"];
 
     preferencesUser = PreferencesUser();
     user = User.fromjson(json.decode(preferencesUser.userData));
@@ -79,7 +79,7 @@ class _PaymentPageState extends State<PaymentPage> {
     }
 
     shopCarService = ShopCarService();
-    paymentState.inDocument(_documents[0]);
+    // paymentState.inDocument(_documents[0]);
     subtotal = widget.subtotal;
     width = widget.width;
     height = widget.height;
@@ -165,17 +165,21 @@ class _PaymentPageState extends State<PaymentPage> {
                       )).then((client) {
                     if (client != null) {
                       Client _tmp = client;
-                      if (_tmp.identityDocumentTypeId == "1") {
-                      } else {}
+                      print(_tmp.number);
+                      if (_tmp.number.length == 8) {
+                        paymentState.inDocument("NOTA DE VENTA");
+                      } else {
+                        paymentState.inDocument("FACTURA");
+                      }
                       paymentState.inClient(client);
                     }
                   });
                 },
               ),
             ),
-            StreamBuilder(
+            StreamBuilder<Client>(
               stream: paymentState.client,
-              builder: (context, snapshote) {
+              builder: (context, AsyncSnapshot<Client> snapshote) {
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -189,14 +193,22 @@ class _PaymentPageState extends State<PaymentPage> {
                                 initialData: "NOTA DE VENTA",
                                 stream: paymentState.document,
                                 builder: (context, snapshot) {
-                                  List<String> init = [
+                                  print(snapshot.data);
+                                  List<String> initRuc = [
                                     "FACTURA",
                                     "BOLETA DE VENTA",
                                     "NOTA DE VENTA"
                                   ];
+                                  List<String> initDni = [
+                                    "NOTA DE VENTA",
+                                    "FACTURA",
+                                    "BOLETA DE VENTA"
+                                  ];
                                   return DropdownButton(
                                       value: snapshot.data,
-                                      items: init
+                                      items: (snapshote.data.number.length == 8
+                                              ? initDni
+                                              : initRuc)
                                           .map<DropdownMenuItem>(
                                               (e) => DropdownMenuItem(
                                                     child: Text(e),

@@ -41,7 +41,7 @@ class Client {
       identityDocumentTypeId: "6",
       number: document,
       name: json['nombre_o_razon_social'],
-      address: json['direccion_completa']);
+      address: json['direccion_completa'] ?? json['direccion']);
 
   factory Client.fromUser(User user) => Client(
       id: user.id,

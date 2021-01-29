@@ -179,7 +179,10 @@ class _SearchClientState extends State<SearchClient> {
                                               ))
                                         ]);
                                   } else {
-                                    Map body = data(false,
+                                    Map body = data(
+                                        cliente.data.number.length == 8
+                                            ? false
+                                            : true,
                                         name: cliente.data.name,
                                         number: cliente.data.number,
                                         address: cliente.data.address);
@@ -253,48 +256,44 @@ class _SearchClientState extends State<SearchClient> {
                                                   ? "DNI"
                                                   : "RUC",
                                               style: TextStyle(
-                                                  color: colorPrimary),
+                                                  fontWeight: FontWeight.bold),
                                             ),
                                             Text(
                                               temporal[index].number,
-                                              style: TextStyle(
-                                                  color: colorPrimary),
+                                              style: TextStyle(),
                                             )
                                           ]),
                                           TableRow(children: [
                                             Text(
                                               "DIRECCION",
                                               style: TextStyle(
-                                                  color: colorPrimary),
+                                                  fontWeight: FontWeight.bold),
                                             ),
                                             Text(
                                               temporal[index].address ?? "-",
-                                              style: TextStyle(
-                                                  color: colorPrimary),
+                                              style: TextStyle(),
                                             )
                                           ]),
                                           TableRow(children: [
                                             Text(
                                               "TELEFONO",
                                               style: TextStyle(
-                                                  color: colorPrimary),
+                                                  fontWeight: FontWeight.bold),
                                             ),
                                             Text(
                                               temporal[index].telephone ?? "-",
-                                              style: TextStyle(
-                                                  color: colorPrimary),
+                                              style: TextStyle(),
                                             )
                                           ]),
                                           TableRow(children: [
                                             Text(
                                               "CORREO",
                                               style: TextStyle(
-                                                  color: colorPrimary),
+                                                  fontWeight: FontWeight.bold),
                                             ),
                                             Text(
                                               temporal[index].email ?? "-",
-                                              style: TextStyle(
-                                                  color: colorPrimary),
+                                              style: TextStyle(),
                                             )
                                           ]),
                                         ],

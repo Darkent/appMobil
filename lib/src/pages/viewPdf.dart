@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:delivery_app/src/models/client.dart';
+import 'package:delivery_app/src/models/documents.dart';
 import 'package:delivery_app/src/models/order.dart';
 import 'package:delivery_app/src/models/purchase.dart';
 import 'package:delivery_app/src/models/user.dart';
@@ -19,8 +20,12 @@ class PdfViewer extends StatefulWidget {
   final User user;
   final Client client;
   final String document;
+  final String url;
+  final Document documentD;
   const PdfViewer(
       {this.user,
+      this.documentD,
+      this.url,
       this.order,
       this.purchase,
       this.externalId,
@@ -50,6 +55,8 @@ class _PdfViewerState extends State<PdfViewer> {
   String saleNoteUrl;
   String documentUrl;
   String typeDocuments;
+  String url;
+  int documentId;
   @override
   void initState() {
     super.initState();
@@ -72,13 +79,17 @@ class _PdfViewerState extends State<PdfViewer> {
       }
     }
 
-    if (widget.order != null) {
-      if (widget.order.identifier == "N") {
+    if (widget.document != null && widget.purchase != null) {
+      if (widget.document == "03" || widget.document == "01") {
+        isSaleNote = false;
+        url = "http://venta.grupopcsystems.online/downloads/document/pdf/";
+
+        documentId = widget.purchase.documents.first['document_id'];
+      } else {
         isSaleNote = true;
-      }
-    } else if (widget.purchase != null) {
-      if (widget.purchase.numberDocument[0] == "N") {
-        isSaleNote = true;
+        url = "http://venta.grupopcsystems.online/api/sale-note/print/";
+
+        documentId = widget.purchase.documents.first['id'];
       }
     }
   }
@@ -90,17 +101,16 @@ class _PdfViewerState extends State<PdfViewer> {
           backgroundColor: colorPrimary,
           title: Text("VISOR"),
         ),
-        body: widget.order != null
+        body: widget.purchase != null
             ? FutureBuilder(
-                future: urlPdf(widget.order.documents.first['document_id']),
+                future: urlPdf(documentId, saleNote: isSaleNote),
                 builder: (context, snapshot) {
-                  print("entrando aca");
                   if (snapshot.hasData) {
                     if (snapshot.data.isNotEmpty) {
                       return Stack(
                         children: [
                           const PDF().cachedFromUrl(
-                            "http://venta.grupopcsystems.online/downloads/document/pdf/${snapshot.data}/a4",
+                            "$url${snapshot.data}/a4",
                             placeholder: (double progress) =>
                                 Center(child: Text('$progress %')),
                             errorWidget: (dynamic error) =>
@@ -117,28 +127,18 @@ class _PdfViewerState extends State<PdfViewer> {
                                     color: Colors.white,
                                   ),
                                   onPressed: () {
-                                    if (widget.order != null) {
-                                      String typeName =
-                                          widget.order.number.length == 8
-                                              ? "NOMBRE: "
-                                              : "RAZON SOCIAL";
+                                    String typeName =
+                                        widget.order.number.length == 8
+                                            ? "NOMBRE: "
+                                            : "RAZON SOCIAL";
 
-                                      String typeBillVoucher = _typeDocument(
-                                          widget.order.documents
-                                              .first['number_full']);
-                                      Share.share(
-                                          "$typeName: ${widget.order.customer.name} \ FECHA: ${formatDate(widget.order.date)} \ $typeBillVoucher: ${widget.order.documents.first['number_full']} \ Abre el enlace: ${snapshot.data}");
-                                    } else {
-                                      String typeName =
-                                          widget.user.number.length == 8
-                                              ? "NOMBRE: "
-                                              : "RAZON SOCIAL";
-
-                                      String typeBillVoucher = _typeDocument(
-                                          widget.purchase.numberDocument);
-                                      Share.share(
-                                          "$typeName: ${widget.user.name} \ FECHA: ${formatDate(widget.purchase.date)} \ $typeBillVoucher: ${widget.purchase.numberDocument} \ Link de descarga: ${snapshot.data}");
-                                    }
+                                    String typeBillVoucher = _typeDocument(
+                                        widget.purchase.documents
+                                                .first['number_full'] ??
+                                            widget.purchase.documents
+                                                .first['identifier']);
+                                    Share.share(
+                                        "$typeName: ${widget.purchase.name} \ FECHA: ${formatDate(widget.purchase.date)} \ Documento: $typeBillVoucher \ Abre el enlace: $url${snapshot.data}/a4");
                                   }),
                             ),
                           )
@@ -155,39 +155,73 @@ class _PdfViewerState extends State<PdfViewer> {
                   }
                 },
               )
-            : Stack(
-                children: [
-                  const PDF().cachedFromUrl(
-                    widget.document != "01" && widget.document != "03"
-                        ? saleNoteUrl
-                        : documentUrl,
-                    placeholder: (double progress) =>
-                        Center(child: Text('$progress %')),
-                    errorWidget: (dynamic error) =>
-                        Center(child: Text(error.toString())),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Align(
-                      alignment: Alignment.bottomRight,
-                      child: FloatingActionButton(
-                          backgroundColor: colorPrimary,
-                          child: Icon(
-                            Icons.share,
-                            color: Colors.white,
-                          ),
-                          onPressed: () {
-                            String typeName = widget.client.number.length == 8
-                                ? "NOMBRE: "
-                                : "RAZON SOCIAL";
+            : widget.document != null
+                ? Stack(
+                    children: [
+                      const PDF().cachedFromUrl(
+                        widget.document != "01" && widget.document != "03"
+                            ? saleNoteUrl
+                            : documentUrl,
+                        placeholder: (double progress) =>
+                            Center(child: Text('$progress %')),
+                        errorWidget: (dynamic error) =>
+                            Center(child: Text(error.toString())),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Align(
+                          alignment: Alignment.bottomRight,
+                          child: FloatingActionButton(
+                              backgroundColor: colorPrimary,
+                              child: Icon(
+                                Icons.share,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                String typeName =
+                                    widget.client.number.length == 8
+                                        ? "NOMBRE: "
+                                        : "RAZON SOCIAL";
 
-                            Share.share(
-                                "$typeName: ${widget.client.name} \ FECHA: ${widget.date} \ Abre el enlace: http://venta.grupopcsystems.online/downloads/document/pdf/$tmpUrl/a4");
-                          }),
-                    ),
+                                Share.share(
+                                    "$typeName: ${widget.client.name} \ FECHA: ${widget.date} \ Abre el enlace: ${widget.document != "01" && widget.document != "03" ? saleNoteUrl : documentUrl}");
+                              }),
+                        ),
+                      )
+                    ],
                   )
-                ],
-              ));
+                : Stack(
+                    children: [
+                      const PDF().cachedFromUrl(
+                        widget.url,
+                        placeholder: (double progress) =>
+                            Center(child: Text('$progress %')),
+                        errorWidget: (dynamic error) =>
+                            Center(child: Text(error.toString())),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Align(
+                          alignment: Alignment.bottomRight,
+                          child: FloatingActionButton(
+                              backgroundColor: colorPrimary,
+                              child: Icon(
+                                Icons.share,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                String typeName =
+                                    widget.client.number.length == 8
+                                        ? "NOMBRE: "
+                                        : "RAZON SOCIAL";
+
+                                Share.share(
+                                    "$typeName: ${widget.documentD.customerDocument.name} \ FECHA: ${widget.documentD.date} \ Abre el enlace: ${widget.url}");
+                              }),
+                        ),
+                      )
+                    ],
+                  ));
   }
 
   String formatDate(String date) {

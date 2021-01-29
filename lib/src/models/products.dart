@@ -2,6 +2,7 @@ class Products {
   int id;
   int itemId;
   String itemCode;
+  int orderId;
   String unid;
   String unitValue;
   String totalBaseIgv;
@@ -32,6 +33,7 @@ class Products {
       this.totalValue,
       this.id,
       this.itemCode,
+      this.orderId,
       this.unid,
       this.description,
       this.internCode,
@@ -78,6 +80,7 @@ class Products {
         itemId: json['item_id'],
         quantity: double.tryParse(json['quantity']).toInt() ?? 0,
         unitValue: json['unit_value'],
+        orderId: json['order_note_id'],
         totalBaseIgv: json['total_base_igv'],
         totalIgv: json['total_igv'],
         totalTaxes: json['total_taxes'],

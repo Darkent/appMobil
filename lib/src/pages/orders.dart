@@ -26,6 +26,7 @@ class _OrdersPageState extends State<OrdersPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   double width;
   double height;
+  TextEditingController queryController;
   OrdersService ordersService;
   OrdersState ordersState;
   List<Order> orders;
@@ -39,6 +40,7 @@ class _OrdersPageState extends State<OrdersPage> {
   void initState() {
     super.initState();
     emiting = false;
+    queryController = TextEditingController();
     colorPrimary = adminColor;
     preferencesUser = PreferencesUser();
     streamSubscription = preferencesUser.receive.stream.listen((event) {
@@ -86,6 +88,43 @@ class _OrdersPageState extends State<OrdersPage> {
     }
   }
 
+  _search() {
+    List<Order> _order = List.from(orders);
+    if (queryController.text.isNotEmpty) {
+      String _query = queryController.text;
+      var _number = int.tryParse(_query) ?? null;
+      print(_number);
+      if (_number != null) {
+        _order = _order.where((o) {
+          if (o.customer.number.contains(_query)) {
+            return true;
+          } else {
+            return false;
+          }
+        }).toList();
+      } else {
+        _order = _order.where((o) {
+          if (o.customer.name.toUpperCase().contains(_query.toUpperCase())) {
+            return true;
+          } else {
+            return false;
+          }
+        }).toList();
+      }
+    }
+    if (!ordersState.selectFValue) {
+      _order.removeWhere((o) => o.document == "01");
+    }
+    if (!ordersState.selectBValue) {
+      _order.removeWhere((o) => o.document == "03");
+    }
+    if (!ordersState.selectNValue) {
+      _order.removeWhere((o) => o.document == "08");
+    }
+    print(_order.length);
+    ordersState.inPending(_order);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,69 +145,143 @@ class _OrdersPageState extends State<OrdersPage> {
         ),
       ),
       body: Center(
-        child: StreamBuilder(
-          stream: ordersState.pending,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return orderShow(snapshot.data);
-            } else {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-          },
+        child: Column(
+          children: [
+            Column(
+              children: [
+                Container(
+                  color: colorPrimary,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: TextField(
+                            controller: queryController,
+                            decoration: InputDecoration(
+                              hintText: "Buscar..",
+                              isDense: true,
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: EdgeInsets.fromLTRB(width * .02,
+                                  width * .03, width * .02, width * .03),
+                              border: OutlineInputBorder(
+                                  borderSide: BorderSide(color: colorPrimary)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: colorPrimary)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        child: Container(
+                            child: Icon(
+                          Icons.search,
+                          size: width * .1,
+                        )),
+                        onTap: _search,
+                      )
+                    ],
+                  ),
+                ),
+                Container(
+                  color: colorPrimary,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Row(
+                        children: [
+                          Text("Factura"),
+                          StreamBuilder<bool>(
+                            initialData: true,
+                            stream: ordersState.selectF,
+                            builder: (context, AsyncSnapshot<bool> snapshot) {
+                              return Checkbox(
+                                activeColor: colorSecondary,
+                                onChanged: (b) {
+                                  ordersState.inSelectF(b);
+                                },
+                                value: snapshot.data,
+                              );
+                            },
+                          )
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Text("Boleta de V."),
+                          StreamBuilder<bool>(
+                            initialData: true,
+                            stream: ordersState.selectB,
+                            builder: (context, AsyncSnapshot<bool> snapshot) {
+                              return Checkbox(
+                                activeColor: colorSecondary,
+                                onChanged: (b) {
+                                  ordersState.inSelectB(b);
+                                },
+                                value: snapshot.data,
+                              );
+                            },
+                          )
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Text("Nota de V."),
+                          StreamBuilder<bool>(
+                            initialData: true,
+                            stream: ordersState.selectN,
+                            builder: (context, AsyncSnapshot<bool> snapshot) {
+                              return Checkbox(
+                                activeColor: colorSecondary,
+                                onChanged: (b) {
+                                  ordersState.inSelectN(b);
+                                },
+                                value: snapshot.data,
+                              );
+                            },
+                          )
+                        ],
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+            Expanded(
+              child: StreamBuilder(
+                stream: ordersState.pending,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.shopping_cart,
+                              size: width * .08,
+                              color: colorSecondary,
+                            ),
+                            Text("Aún no tiene pedidos.")
+                          ],
+                        ),
+                      );
+                    } else {
+                      return orderShow(snapshot.data);
+                    }
+                  } else {
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
-    // return DefaultTabController(
-    //   length: 2,
-    //   child: Scaffold(
-    //     key: _scaffoldKey,
-    //     appBar: AppBar(
-    //       backgroundColor: adminColor,
-    //       title: Text("Mis Pedidos"),
-    //       centerTitle: true,
-    //       bottom: TabBar(
-    //         tabs: [
-    //           Tab(
-    //             child: Text("PENDIENTES"),
-    //             icon: Icon(Icons.timer),
-    //           ),
-    //           Tab(
-    //             child: Text("PAGADOS"),
-    //             icon: Icon(Icons.playlist_add_check),
-    //           ),
-    //         ],
-    //       ),
-    //     ),
-    //     body: TabBarView(children: [
-    //       StreamBuilder(
-    //         stream: ordersState.pending,
-    //         builder: (context, snapshot) {
-    //           if (snapshot.hasData) {
-    //             return orderShow(snapshot.data);
-    //           } else {
-    //             return Center(
-    //               child: CircularProgressIndicator(),
-    //             );
-    //           }
-    //         },
-    //       ),
-    //       StreamBuilder(
-    //         stream: ordersState.delivered,
-    //         builder: (context, snapshot) {
-    //           if (snapshot.hasData) {
-    //             return orderShow(snapshot.data);
-    //           } else {
-    //             return Center(
-    //               child: CircularProgressIndicator(),
-    //             );
-    //           }
-    //         },
-    //       ),
-    //     ]),
-    //   ),
-    // );
   }
 
   Container orderShow(List<Order> list) {
@@ -360,39 +473,6 @@ class _OrdersPageState extends State<OrdersPage> {
                                     ],
                                   ),
                                 ),
-                                // Container(
-                                //   child: Column(
-                                //     mainAxisAlignment: MainAxisAlignment.end,
-                                //     children: [
-                                //       GestureDetector(
-                                //         child: Icon(
-                                //           Icons.add_to_home_screen,
-                                //           color: colorSecondary,
-                                //         ),
-                                //         onTap: () async {
-                                //           await show(e).then((value) {
-                                //             if (value != null) {
-                                //               if (value) {
-                                //                 Navigator.push(
-                                //                     context,
-                                //                     MaterialPageRoute(
-                                //                         builder: (context) =>
-                                //                             PdfViewer(
-                                //                               order: e,
-                                //                               externalId:
-                                //                                   e.externalId,
-                                //                             )));
-                                //               } else {
-                                //                 message("Documento emitido");
-                                //                 requestOrders();
-                                //               }
-                                //             }
-                                //           });
-                                //         },
-                                //       )
-                                //     ],
-                                //   ),
-                                // )
                               ],
                             )),
                       ),
@@ -742,12 +822,10 @@ class _OrdersPageState extends State<OrdersPage> {
                                                     date: ordersState.dateValue,
                                                     order: order,
                                                     items: tmp,
-                                                    serie: serie.number,
+                                                    serie: serie,
                                                     type: serie.documentTypeId,
                                                   );
-                                                  debugPrint(
-                                                      _tmp['items'].toString(),
-                                                      wrapWidth: 1024);
+
                                                   if (await documentService
                                                       .emitir(_tmp,
                                                           items: tmp,
@@ -856,19 +934,9 @@ class _OrdersPageState extends State<OrdersPage> {
 
   void requestOrders() async {
     orders = await ordersService.getAllOrders();
+    orders.removeWhere((o) => o.documents.isNotEmpty);
 
-    List<Order> _pending = [];
-    List<Order> _delivered = [];
-
-    orders.forEach((Order order) {
-      if (order.documents.isEmpty) {
-        _pending.add(order);
-      } else {
-        _delivered.add(order);
-      }
-    });
-
-    ordersState.inPending(_pending);
+    ordersState.inPending(List.from(orders));
   }
 
   String formatDateToString(DateTime _date) {
