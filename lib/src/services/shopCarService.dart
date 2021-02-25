@@ -4,25 +4,21 @@ import 'package:delivery_app/src/models/products.dart';
 import 'package:delivery_app/src/models/purchase.dart';
 import 'package:delivery_app/src/models/user.dart';
 import 'package:delivery_app/src/providers/preferences.dart';
+import 'package:delivery_app/src/utils/const.dart';
+
 import 'package:http/http.dart' as http;
 
 class ShopCarService {
   PreferencesUser preferencesUser = PreferencesUser();
-  final Map<String, String> requestHeaders = {
-    'Content-type': 'application/json',
-    'Accept': 'application/json',
-    'Authorization': "Bearer zXxR5P5vJB25p9IulQOoh1zoN4RWDK3rXwAbUSooV28qMBXkqi"
-  };
-  final tokenAdmin = "http://venta.grupopcsystems.online/api/users/type";
-  final urlFirebase = "https://fcm.googleapis.com/fcm/send";
-  final urlPurchases =
-      "http://venta.grupopcsystems.online/api/order-notes/user/";
-  final urlPaymentStatus =
-      "http://venta.grupopcsystems.online/api/order-notes/status";
-  final urlPayment = "http://venta.grupopcsystems.online/api/order-notes";
-  final idProduct = "http://venta.grupopcsystems.online/api/items/record/";
 
-  final keyFCM = "http://venta.grupopcsystems.online/api/companies/record";
+  final tokenAdmin = "$globalUrl/api/users/type";
+  final urlFirebase = "https://fcm.googleapis.com/fcm/send";
+  final urlPurchases = "$globalUrl/api/order-notes/user/";
+  final urlPaymentStatus = "$globalUrl/api/order-notes/status";
+  final urlPayment = "$globalUrl/api/order-notes";
+  final idProduct = "$globalUrl/api/items/record/";
+
+  final keyFCM = "$globalUrl/api/companies/record";
   String formatDate(DateTime _date) {
     return "${_format(_date.year)}-${_format(_date.month)}-${_format(_date.day)}";
   }
@@ -95,7 +91,7 @@ class ShopCarService {
     };
 
     http.Response response = await http.post(urlPayment,
-        body: json.encode(body), headers: requestHeaders);
+        body: json.encode(body), headers: globalRequestHeaders);
 
     Map bodyStatus = {
       "external_id": json.decode(response.body)['data']["external_id"]
@@ -103,8 +99,8 @@ class ShopCarService {
     if (response.statusCode == 200) {
       //Enviar para cambiar el status del pedido--------
       http.Response responseStatus = await http.post(urlPaymentStatus,
-          body: json.encode(bodyStatus), headers: requestHeaders);
-      //------------------------------------------------
+          body: json.encode(bodyStatus), headers: globalRequestHeaders);
+      //--------------- ---------------------------------
 
       if (responseStatus.statusCode == 200) {
         List<dynamic> temporal = preferencesUser.purchases;
@@ -150,7 +146,7 @@ class ShopCarService {
 
   Future<String> getToken() async {
     http.Response response =
-        await http.get(tokenAdmin, headers: requestHeaders);
+        await http.get(tokenAdmin, headers: globalRequestHeaders);
     if (response.statusCode == 200) {
       Map parsed = json.decode(response.body);
       if (parsed['data'].isNotEmpty) {
@@ -161,7 +157,8 @@ class ShopCarService {
   }
 
   Future<String> getKey() async {
-    http.Response response = await http.get(keyFCM, headers: requestHeaders);
+    http.Response response =
+        await http.get(keyFCM, headers: globalRequestHeaders);
     if (response.statusCode == 200) {
       Map parsed = json.decode(response.body);
       if (parsed['data'].isNotEmpty) {
@@ -172,8 +169,8 @@ class ShopCarService {
   }
 
   Future<Map> getProduct(Products product) async {
-    http.Response response =
-        await http.get("$idProduct${product.id}", headers: requestHeaders);
+    http.Response response = await http.get("$idProduct${product.id}",
+        headers: globalRequestHeaders);
     Map productReturn = {};
 
     productReturn =
@@ -262,7 +259,7 @@ class ShopCarService {
   Future<List<Purchase>> getAllPurchases(int id) async {
     List<Purchase> temporal = [];
     http.Response response =
-        await http.get("$urlPurchases$id", headers: requestHeaders);
+        await http.get("$urlPurchases$id", headers: globalRequestHeaders);
 
     if (response.statusCode == 200) {
       temporal = json

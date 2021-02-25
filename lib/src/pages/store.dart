@@ -53,7 +53,7 @@ class _StorePageState extends State<StorePage> {
     preferencesUser = PreferencesUser();
     if (preferencesUser.userData.length != 1) {
       user = User.fromjson(json.decode(preferencesUser.userData));
-      print("tipo de usuario ${user.type} ");
+
       if (user.type == "admin") {
         colorPrimary = adminColor;
       } else if (user.type == "seller") {
@@ -229,12 +229,12 @@ class _StorePageState extends State<StorePage> {
                                     child: Container(
                                       width: double.infinity,
                                       decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: NetworkImage(
-                                              _categories[index].icono),
-                                          fit: BoxFit.fill,
-                                        ),
-                                      ),
+                                          // image: DecorationImage(
+                                          //   image: NetworkImage(
+                                          //       _categories[index].icono),
+                                          //   fit: BoxFit.fill,
+                                          // ),
+                                          ),
                                     ),
                                   ),
                                 ),
@@ -405,8 +405,6 @@ class _StorePageState extends State<StorePage> {
   }
 
   SizedBox productsId(List<Products> products) {
-    print(height);
-
     products = products.sublist(0, 3);
     return SizedBox(
       height: height * (600 > height ? .36 : .33),

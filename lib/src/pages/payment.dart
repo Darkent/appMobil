@@ -87,7 +87,7 @@ class _PaymentPageState extends State<PaymentPage> {
         .decode(preferencesUser.productsCar)
         .map<Products>((e) => Products.fromJsonQuantity(e))
         .toList();
-    if (user.type == "client") {
+    if (user.type != "admin") {
       client = Client.fromUser(user);
       paymentState.inClient(client);
     }
@@ -97,7 +97,10 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   getIdCustomer() async {
-    idCustomer = await ClientService().idCustomerFromClient(client.number);
+    if (client.number != null) {
+      idCustomer = await ClientService().idCustomerFromClient(client.number);
+    }
+    idCustomer = null;
   }
 
   Series _getSerie(String document) {
@@ -165,7 +168,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       )).then((client) {
                     if (client != null) {
                       Client _tmp = client;
-                      print(_tmp.number);
+
                       if (_tmp.number.length == 8) {
                         paymentState.inDocument("NOTA DE VENTA");
                       } else {
@@ -193,7 +196,6 @@ class _PaymentPageState extends State<PaymentPage> {
                                 initialData: "NOTA DE VENTA",
                                 stream: paymentState.document,
                                 builder: (context, snapshot) {
-                                  print(snapshot.data);
                                   List<String> initRuc = [
                                     "FACTURA",
                                     "BOLETA DE VENTA",
@@ -269,9 +271,7 @@ class _PaymentPageState extends State<PaymentPage> {
                                 paymentState.clientValue.number.length != 8) {
                               if (user.type == "admin") {
                                 sendOrder(isAdmin: true).then((value) async {
-                                  print(value);
                                   if (test) {
-                                    print("borrando carrito");
                                     await preferencesUser.deleteCar();
 
                                     Future.delayed(Duration(milliseconds: 100),
@@ -296,7 +296,6 @@ class _PaymentPageState extends State<PaymentPage> {
                                 });
                               } else {
                                 sendOrder(isAdmin: false).then((value) async {
-                                  print(value);
                                   if (test) {
                                     await preferencesUser.deleteCar();
 
@@ -648,7 +647,6 @@ class _PaymentPageState extends State<PaymentPage> {
             items: restoreProducts);
 
         Map _tmp = documentService.saleNote(order, paymentState.dateValue);
-        debugPrint(_tmp.toString(), wrapWidth: 1024);
 
         future = documentService.emitedNoteSale(_tmp, order);
       }
@@ -656,7 +654,9 @@ class _PaymentPageState extends State<PaymentPage> {
       Client client = paymentState.clientValue;
 
       if (user.number == paymentState.clientValue.number) {
-        client.id = idCustomer;
+        if (idCustomer != null) {
+          client.id = idCustomer;
+        }
       }
       future = shopCarService.sendProducts(restoreProducts, subtotal, client,
           paymentState.documentValue, paymentState.dateValue, externalId);
@@ -704,8 +704,6 @@ class _PaymentPageState extends State<PaymentPage> {
                                           textColor: Colors.white,
                                           child: Text("VER DOCUMENTO"),
                                           onPressed: () {
-                                            print(preferencesUser.tmpPdf);
-
                                             Navigator.pop(context,
                                                 _series.documentTypeId);
                                           },

@@ -1,11 +1,12 @@
 import 'dart:convert';
 
 import 'package:delivery_app/src/providers/preferences.dart';
+import 'package:delivery_app/src/utils/const.dart';
 import 'package:http/http.dart';
 
 class LoginService {
   final PreferencesUser preferencesUser = PreferencesUser();
-  static const String url = "http://venta.grupopcsystems.online/api/login";
+  static String url = "$globalUrl/api/login";
 
   final Map<String, String> requestHeaders = {
     'Content-type': 'application/json',

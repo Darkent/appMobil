@@ -8,6 +8,7 @@ import 'package:delivery_app/src/models/user.dart';
 import 'package:delivery_app/src/providers/preferences.dart';
 import 'package:delivery_app/src/services/documentPdf.dart';
 import 'package:delivery_app/src/utils/colors.dart';
+import 'package:delivery_app/src/utils/const.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cached_pdfview/flutter_cached_pdfview.dart';
 import 'package:share/share.dart';
@@ -40,10 +41,10 @@ class PdfViewer extends StatefulWidget {
 }
 
 class _PdfViewerState extends State<PdfViewer> {
-  // final urlPdf = "http://venta.grupopcsystems.online/downloads/document/pdf/";
-  // final urlPdfNote = "http://venta.grupopcsystems.online/api/sale-note/print/";
+  // final urlPdf = "$globalUrl/downloads/document/pdf/";
+  // final urlPdfNote = "$globalUrl/api/sale-note/print/";
 
-  //http://venta.grupopcsystems.online/api/sale-note/print/5d99dd98-7f95-4714-8c84-b5ad96a080de/a4",
+  //$globalUrl/api/sale-note/print/5d99dd98-7f95-4714-8c84-b5ad96a080de/a4",
 
   //f2eb2749-2733-4475-8ca4-5b71b5dc2fa1/a4
 
@@ -66,10 +67,8 @@ class _PdfViewerState extends State<PdfViewer> {
     preferencesUser = PreferencesUser();
     colorPrimary = Colors.blue;
     tmpUrl = preferencesUser.tmpPdf;
-    saleNoteUrl =
-        "http://venta.grupopcsystems.online/api/sale-note/print/$tmpUrl/a4";
-    documentUrl =
-        "http://venta.grupopcsystems.online/downloads/document/pdf/$tmpUrl/a4";
+    saleNoteUrl = "$globalUrl/api/sale-note/print/$tmpUrl/a4";
+    documentUrl = "$globalUrl/downloads/document/pdf/$tmpUrl/a4";
     if (preferencesUser.userData.length != 1) {
       user = User.fromjson(json.decode(preferencesUser.userData));
       if (user.type == "admin") {
@@ -82,12 +81,12 @@ class _PdfViewerState extends State<PdfViewer> {
     if (widget.document != null && widget.purchase != null) {
       if (widget.document == "03" || widget.document == "01") {
         isSaleNote = false;
-        url = "http://venta.grupopcsystems.online/downloads/document/pdf/";
+        url = "$globalUrl/downloads/document/pdf/";
 
         documentId = widget.purchase.documents.first['document_id'];
       } else {
         isSaleNote = true;
-        url = "http://venta.grupopcsystems.online/api/sale-note/print/";
+        url = "$globalUrl/api/sale-note/print/";
 
         documentId = widget.purchase.documents.first['id'];
       }

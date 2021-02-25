@@ -223,7 +223,7 @@ class _LoginPageState extends State<LoginPage> {
                                           "password":
                                               "${loginState.passwordValue}"
                                         };
-
+                                        print("el body $body");
                                         if (await loginService
                                             .loginRequest(body)) {
                                           Navigator.pushReplacement(

@@ -1,16 +1,11 @@
 import 'dart:convert';
 
 import 'package:delivery_app/src/models/client.dart';
+import 'package:delivery_app/src/utils/const.dart';
 
 import 'package:http/http.dart' as http;
 
 class ClientService {
-  final Map<String, String> requestHeaders = {
-    'Content-type': 'application/json',
-    'Accept': 'application/json',
-    'Authorization': "Bearer zXxR5P5vJB25p9IulQOoh1zoN4RWDK3rXwAbUSooV28qMBXkqi"
-  };
-
   final Map<String, String> documentRequest = {
     'Content-type': 'application/json',
     'Accept': 'application/json',
@@ -25,36 +20,41 @@ class ClientService {
       "http://grupopcsystems.xyz/api/GHieD96xE0lrwjbRWDsvzIELebuWL3UiUONO1pfVjtPk2GqVmM/dni/";
   final urlSearchRUC =
       "http://grupopcsystems.xyz/api/GHieD96xE0lrwjbRWDsvzIELebuWL3UiUONO1pfVjtPk2GqVmM/ruc/";
-  // final urlSearchDNI = "http://venta.grupopcsystems.online/api/services/dni/";
-  // final urlSearchRUC = "http://venta.grupopcsystems.online/api/services/ruc/";
+  // final urlSearchDNI = "$globalUrl/api/services/dni/";
+  // final urlSearchRUC = "$globalUrl/api/services/ruc/";
   final urlSearchByName =
-      "http://venta.grupopcsystems.online/api/persons/customers/records?column=name&page=1&value=";
+      "$globalUrl/api/persons/customers/records?column=name&page=1&value=";
   final urlSearchByDocument =
-      "http://venta.grupopcsystems.online/api/persons/customers/records?column=number&page=1&value=";
+      "$globalUrl/api/persons/customers/records?column=number&page=1&value=";
 
   Future<int> idCustomerFromClient(String query) async {
-    http.Response response =
-        await http.get("$urlSearchByDocument$query", headers: requestHeaders);
-    List<Client> results = json
-        .decode(response.body)['data']
-        .map<Client>((e) => Client.fromJson(e))
-        .toList();
-    return results.first.id;
+    http.Response response = await http.get("$urlSearchByDocument$query",
+        headers: globalRequestHeaders);
+    var results = json.decode(response.body)['data'];
+
+    if (results.isEmpty) {
+      return null;
+    }
+    List<Client> _results =
+        results.map<Client>((e) => Client.fromJson(e)).toList();
+
+    return _results.first.id;
   }
 
   Future<List<Client>> search(String field, String query) async {
     try {
       if (field == "DOCUMENT") {
         http.Response response = await http.get("$urlSearchByDocument$query",
-            headers: requestHeaders);
+            headers: globalRequestHeaders);
         List<Client> results = json
             .decode(response.body)['data']
             .map<Client>((e) => Client.fromJson(e))
             .toList();
+        print(response.body);
         return results;
       } else {
-        http.Response response =
-            await http.get("$urlSearchByName$query", headers: requestHeaders);
+        http.Response response = await http.get("$urlSearchByName$query",
+            headers: globalRequestHeaders);
         List<Client> results = json
             .decode(response.body)['data']
             .map<Client>((e) => Client.fromJson(e))
@@ -69,14 +69,13 @@ class ClientService {
   Future<Client> getData(bool field, String document) async {
     http.Response response;
     var _responseData;
-    print(DateTime.now());
+
     if (field) {
       response = await http.get("$urlSearchDNI$document");
       _responseData = json.decode(response.body);
       if (_responseData['success']) {
         return new Client.fromDNI(_responseData['data'], document);
       } else {
-        print("$urlSearchDNI$document");
         return new Client();
       }
     } else {

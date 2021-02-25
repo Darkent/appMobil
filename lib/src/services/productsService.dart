@@ -1,28 +1,24 @@
-//http://demo.grupopcsystems.online/api/items/category/2 PRODUCTOS 2 ID
-//http://demo.grupopcsystems.online/api/categories/records?column=name&page=1 CATEGORIAS
-//http://demo.grupopcsystems.online/api/items/record/6 DETALLE 6 ID
+//http://demo.grupodubai.online/api/items/category/2 PRODUCTOS 2 ID
+//http://demo.grupodubai.online/api/categories/records?column=name&page=1 CATEGORIAS
+//http://demo.grupodubai.online/api/items/record/6 DETALLE 6 ID
 //Bearer 9Um22l1L4AKUQUxSYIJVTRHV8ZrmwZEFsKqRajaDcSuQEZGyLz  TOKEN
 import 'dart:convert';
 
 import 'package:delivery_app/src/models/categories.dart';
 import 'package:delivery_app/src/models/products.dart';
+import 'package:delivery_app/src/utils/const.dart';
 import 'package:http/http.dart';
 
 class ProductsServices {
   //TEST
-  final Map<String, String> requestHeaders = {
-    'Content-type': 'application/json',
-    'Accept': 'application/json',
-    'Authorization': "Bearer zXxR5P5vJB25p9IulQOoh1zoN4RWDK3rXwAbUSooV28qMBXkqi"
-  };
-  final String _productsUrl =
-      "http://venta.grupopcsystems.online/api/items/category/";
+
+  final String _productsUrl = "$globalUrl/api/items/category/";
   final String _categoriesUrl =
-      "http://venta.grupopcsystems.online/api/categories/records?column=name&page=1";
+      "$globalUrl/api/categories/records?column=name&page=1";
 
   Future<List<Category>> getCategories() async {
     final Response _response =
-        await get(_categoriesUrl, headers: requestHeaders);
+        await get(_categoriesUrl, headers: globalRequestHeaders);
     Map<String, dynamic> _data = json.decode(_response.body);
     List<Category> _categories =
         _data['data'].map<Category>((e) => Category.fromJson(e)).toList();
@@ -32,7 +28,7 @@ class ProductsServices {
 
   Future<List<Products>> getProducts(int id) async {
     final Response _response =
-        await get("$_productsUrl$id", headers: requestHeaders);
+        await get("$_productsUrl$id", headers: globalRequestHeaders);
     Map<String, dynamic> _data = json.decode(_response.body);
     List<Products> _products =
         _data['data'].map<Products>((e) => Products.fromJson(e)).toList();
@@ -43,7 +39,7 @@ class ProductsServices {
     List<Products> _products = [];
 
     final Response _response =
-        await get(_categoriesUrl, headers: requestHeaders);
+        await get(_categoriesUrl, headers: globalRequestHeaders);
     Map<String, dynamic> _data = json.decode(_response.body);
     List<Category> _categories =
         _data['data'].map<Category>((e) => Category.fromJson(e)).toList();

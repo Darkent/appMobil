@@ -93,7 +93,7 @@ class _OrdersPageState extends State<OrdersPage> {
     if (queryController.text.isNotEmpty) {
       String _query = queryController.text;
       var _number = int.tryParse(_query) ?? null;
-      print(_number);
+
       if (_number != null) {
         _order = _order.where((o) {
           if (o.customer.number.contains(_query)) {
@@ -121,7 +121,7 @@ class _OrdersPageState extends State<OrdersPage> {
     if (!ordersState.selectNValue) {
       _order.removeWhere((o) => o.document == "08");
     }
-    print(_order.length);
+
     ordersState.inPending(_order);
   }
 

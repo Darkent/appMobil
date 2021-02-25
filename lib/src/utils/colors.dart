@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 final black = Colors.black;
 final white = Colors.white;
 
-final sellerColor = Colors.greenAccent;
+final sellerColor = Colors.green;
 final adminColor = Color(0xffFFBB00);
 final visitColor = Color(0xff145DEB);
 

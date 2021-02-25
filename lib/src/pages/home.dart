@@ -52,7 +52,7 @@ class _HomePageState extends State<HomePage> {
     width = widget.width;
     height = widget.height;
     registerService = RegisterService();
-    colorPrimary = Colors.blue;
+    colorPrimary = visitColor;
 
     preferencesUser = PreferencesUser();
     if (preferencesUser.userData.length != 1) {
@@ -127,6 +127,7 @@ class _HomePageState extends State<HomePage> {
     if (user != null) {
       if (user.type != "admin" && user.type != "client") {
         colorPrimary = sellerColor;
+        colorSecondary = visitColor;
         _pages.removeWhere((element) => element is OrdersPage);
         _pages.removeWhere((element) => element is PurchasesPage);
         _pages.removeWhere((element) => element is DocumentsPage);

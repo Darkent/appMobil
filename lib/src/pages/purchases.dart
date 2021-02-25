@@ -40,7 +40,6 @@ class _PurchasesPageState extends State<PurchasesPage> {
     colorPrimary = visitColor;
     width = widget.width;
     height = widget.height;
-    print(user.id);
   }
 
   void message(String _message) {
@@ -119,7 +118,6 @@ class _PurchasesPageState extends State<PurchasesPage> {
                       child: Center(
                         child: Container(
                           width: width * .9,
-                          height: height * .23,
                           child: Card(
                               child: Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -143,6 +141,24 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                                     : colorSecondary,
                                                 fontWeight: FontWeight.bold)),
                                       ),
+                                      Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                "Nro de pedido: ",
+                                                style: TextStyle(
+                                                    fontSize: width * .035,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              Text(
+                                                e.id.toString(),
+                                                style: TextStyle(
+                                                    fontSize: width * .035),
+                                              ),
+                                            ],
+                                          )),
                                       Padding(
                                           padding: const EdgeInsets.all(4.0),
                                           child: Row(
@@ -181,25 +197,25 @@ class _PurchasesPageState extends State<PurchasesPage> {
                                                   ),
                                                 ],
                                               ))
-                                          : Padding(
-                                              padding:
-                                                  const EdgeInsets.all(4.0),
-                                              child: Row(
-                                                children: [
-                                                  Text(
-                                                    "Documento solicitado: ",
-                                                    style: TextStyle(
-                                                        fontSize: width * .035,
-                                                        fontWeight:
-                                                            FontWeight.bold),
-                                                  ),
-                                                  Text(
-                                                    documentToEmit(e.document),
-                                                    style: TextStyle(
-                                                        fontSize: width * .035),
-                                                  ),
-                                                ],
-                                              )),
+                                          : SizedBox(),
+                                      Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                "Documento: ",
+                                                style: TextStyle(
+                                                    fontSize: width * .035,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              Text(
+                                                documentToEmit(e.document),
+                                                style: TextStyle(
+                                                    fontSize: width * .035),
+                                              ),
+                                            ],
+                                          )),
                                       Padding(
                                           padding: const EdgeInsets.all(4.0),
                                           child: Row(

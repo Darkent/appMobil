@@ -7,17 +7,13 @@ import 'package:delivery_app/src/models/products.dart';
 import 'package:delivery_app/src/models/series.dart';
 import 'package:delivery_app/src/models/user.dart';
 import 'package:delivery_app/src/utils/const.dart';
-import 'package:flutter/cupertino.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:delivery_app/src/providers/preferences.dart';
 
 class DocumentService {
   PreferencesUser preferencesUser = PreferencesUser();
-  final Map<String, String> requestHeaders = {
-    'Content-type': 'application/json',
-    'Accept': 'application/json',
-    'Authorization': "Bearer zXxR5P5vJB25p9IulQOoh1zoN4RWDK3rXwAbUSooV28qMBXkqi"
-  };
+
   final keyFCM = "$globalUrl/api/companies/record";
   final urlFirebase = "https://fcm.googleapis.com/fcm/send";
   final urlTokenUser =
@@ -41,14 +37,14 @@ class DocumentService {
     List<Document> documents = [];
     http.Response response;
     Map parsed;
-    response = await http.get(urlDocuments, headers: requestHeaders);
+    response = await http.get(urlDocuments, headers: globalRequestHeaders);
     if (response.statusCode == 200) {
       parsed = json.decode(response.body);
       documents.addAll(
           parsed['data'].map<Document>((d) => Document.documents(d)).toList());
     }
 
-    response = await http.get(urlNotes, headers: requestHeaders);
+    response = await http.get(urlNotes, headers: globalRequestHeaders);
     if (response.statusCode == 200) {
       parsed = json.decode(response.body);
       documents.addAll(
@@ -59,7 +55,8 @@ class DocumentService {
   }
 
   Future<List<Series>> getSeries() async {
-    http.Response response = await http.get(urlSeries, headers: requestHeaders);
+    http.Response response =
+        await http.get(urlSeries, headers: globalRequestHeaders);
     if (response.statusCode == 200) {
       Map parsed = json.decode(response.body);
       return parsed['series']
@@ -70,7 +67,8 @@ class DocumentService {
   }
 
   Future<String> getKey() async {
-    http.Response response = await http.get(keyFCM, headers: requestHeaders);
+    http.Response response =
+        await http.get(keyFCM, headers: globalRequestHeaders);
     if (response.statusCode == 200) {
       Map parsed = json.decode(response.body);
       if (parsed['data'].isNotEmpty) {
@@ -82,7 +80,7 @@ class DocumentService {
 
   Future<bool> deletedItems(Map order) async {
     http.Response response = await http.post(urlUpdateItems,
-        body: json.encode(order), headers: requestHeaders);
+        body: json.encode(order), headers: globalRequestHeaders);
     if (response.statusCode == 200) {
       Map parsed = json.decode(response.body);
       if (parsed['success']) {
@@ -159,39 +157,37 @@ class DocumentService {
     http.Response response;
     if (!deletedI) {
       response = await http.post(urlClients,
-          body: json.encode(body), headers: requestHeaders);
+          body: json.encode(body), headers: globalRequestHeaders);
 
       if (response.statusCode == 200) {
         sendNotification(order.number);
-        print(response.statusCode);
+
         return true;
       }
     } else {
       Map _body = orderUpdate(order, items);
       if (await deletedItems(_body)) {
         response = await http.post(urlClients,
-            body: json.encode(body), headers: requestHeaders);
+            body: json.encode(body), headers: globalRequestHeaders);
 
         if (response.statusCode == 200) {
           sendNotification(order.number);
-          print(response.statusCode);
+
           return true;
         }
       }
     }
-    print(response.body);
-    print(urlClients);
 
     return false;
   }
 
   Future<bool> emitedNoteSale(Map body, Order order) async {
     http.Response response = await http.post(urlSaleNote,
-        body: json.encode(body), headers: requestHeaders);
+        body: json.encode(body), headers: globalRequestHeaders);
 
     if (response.statusCode == 200) {
       PreferencesUser _preferenceUser = PreferencesUser();
-      debugPrint(response.body.toString(), wrapWidth: 1024);
+
       Map body = json.decode(response.body);
 
       _preferenceUser.tmpPdf = body['data']['external_id'];
@@ -200,7 +196,7 @@ class DocumentService {
       }
       return true;
     }
-    debugPrint(response.body, wrapWidth: 1024);
+
     return false;
   }
 
@@ -210,15 +206,13 @@ class DocumentService {
       DateTime date,
       Order order,
       List<Products> items}) {
-    Customers _customers = order.customers;
     String _date = date.toString().split(" ")[0];
     String igv = (double.parse(order.subtotal.split(",").join()) * .18)
         .toStringAsFixed(2);
     String base = order.subtotal.split(",").join();
     String total = (double.parse(order.subtotal.split(",").join()) * 1.18)
         .toStringAsFixed(2);
-    print(serie.id);
-    print(serie.documentTypeId);
+
     return {
       "document_type_id": serie.documentTypeId,
       "series_id": serie.id,
@@ -401,8 +395,8 @@ class DocumentService {
   }
 
   Future<bool> emitirDocumentoDirectamente(Map body) async {
-    http.Response response =
-        await http.post(url, body: json.encode(body), headers: requestHeaders);
+    http.Response response = await http.post(url,
+        body: json.encode(body), headers: globalRequestHeaders);
 
     if (response.statusCode == 200) {
       Map body = json.decode(response.body);

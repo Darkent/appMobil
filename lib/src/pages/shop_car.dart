@@ -59,6 +59,7 @@ class _ShopCarPageState extends State<ShopCarPage> {
         colorSecondary = visitColor;
       } else if (user.type == "seller") {
         colorPrimary = sellerColor;
+        colorSecondary = visitColor;
       }
     }
   }

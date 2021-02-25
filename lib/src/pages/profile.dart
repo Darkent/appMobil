@@ -53,6 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
           colorPrimary = adminColor;
           colorSecondary = visitColor;
         } else if (user.type == "seller") {
+          colorSecondary = visitColor;
           colorPrimary = sellerColor;
         }
       }

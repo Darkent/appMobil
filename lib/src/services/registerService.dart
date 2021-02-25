@@ -1,22 +1,16 @@
 import 'dart:convert';
 
+import 'package:delivery_app/src/utils/const.dart';
 import 'package:http/http.dart';
 
 class RegisterService {
-  final Map<String, String> requestHeaders = {
-    'Content-type': 'application/json',
-    'Accept': 'application/json',
-    'Authorization': "Bearer zXxR5P5vJB25p9IulQOoh1zoN4RWDK3rXwAbUSooV28qMBXkqi"
-  };
-  final urlUpdateClient = "http://venta.grupopcsystems.online/api/perfil";
-  final urlRegisterCustomers = "http://venta.grupopcsystems.online/api/persons";
+  final urlUpdateClient = "$globalUrl/api/perfil";
+  final urlRegisterCustomers = "$globalUrl/api/persons";
 
-  final urlRegisterClient =
-      "http://venta.grupopcsystems.online/api/ecommerce/storeUser";
+  final urlRegisterClient = "$globalUrl/api/ecommerce/storeUser";
   Future<Map<String, dynamic>> register(Map body) async {
-    print(body);
     Response response = await post(urlRegisterCustomers,
-        body: json.encode(body), headers: requestHeaders);
+        body: json.encode(body), headers: globalRequestHeaders);
 
     if (response.statusCode == 200) {
       int id = json.decode(response.body)['id'];
@@ -29,7 +23,7 @@ class RegisterService {
 
   Future<bool> registerClient(Map body) async {
     Response response = await post(urlRegisterClient,
-        body: json.encode(body), headers: requestHeaders);
+        body: json.encode(body), headers: globalRequestHeaders);
 
     if (response.statusCode == 200) {
       return true;
@@ -40,7 +34,7 @@ class RegisterService {
 
   Future<bool> update(Map body) async {
     Response response = await post(urlRegisterCustomers,
-        body: json.encode(body), headers: requestHeaders);
+        body: json.encode(body), headers: globalRequestHeaders);
 
     if (response.statusCode == 200) {
       return true;
@@ -51,7 +45,7 @@ class RegisterService {
 
   Future<bool> updateClient(Map body) async {
     Response response = await post(urlUpdateClient,
-        body: json.encode(body), headers: requestHeaders);
+        body: json.encode(body), headers: globalRequestHeaders);
 
     if (response.statusCode == 200) {
       return true;

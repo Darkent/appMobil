@@ -69,7 +69,6 @@ class _DocumentsPageState extends State<DocumentsPage> {
   }
 
   _search() {
-    print(documents.length);
     List<Document> _document = List.from(documents);
     if (queryController.text.isNotEmpty) {
       String _query = queryController.text;
@@ -104,7 +103,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
     if (!ordersState.selectNValue) {
       _document.removeWhere((o) => o.number[0] == "N");
     }
-    print(_document.length);
+
     ordersState.inDocuments(_document);
   }
 
@@ -324,7 +323,28 @@ class _DocumentsPageState extends State<DocumentsPage> {
                                   child: Row(
                                     children: [
                                       Text(
-                                        "Documento: ",
+                                        "Tipo de documento: ",
+                                        style: TextStyle(
+                                            fontSize: width * .035,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        e.number[0] == "F"
+                                            ? "Factura"
+                                            : e.number[0] == "B"
+                                                ? "Boleta de venta"
+                                                : "Nota de venta",
+                                        style:
+                                            TextStyle(fontSize: width * .035),
+                                      ),
+                                    ],
+                                  )),
+                              Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        "Número de documento: ",
                                         style: TextStyle(
                                             fontSize: width * .035,
                                             fontWeight: FontWeight.bold),
